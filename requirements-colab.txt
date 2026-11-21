@@ -1,0 +1,20 @@
+# Paquetes que el taller necesita y que Google Colab NO trae preinstalados.
+# En Colab solo se instala esto: numpy, pandas, xarray, matplotlib y scipy se
+# usan tal como vienen. Versiones elegidas para ser compatibles con las de Colab
+# (Python 3.13, numpy 2.4.6, pandas 2.2.3, xarray 2025.12.0, matplotlib 3.10.0,
+# scipy 1.16.3): pip las resuelve sin cambiar ninguna de esas.
+
+# Lectura de NetCDF4 (motor de xarray). h5py sin versión fija: si Colab ya lo
+# trae, no se toca; si falta, se instala.
+h5netcdf==1.8.3
+h5py
+
+# Descarga de NOAA OISST desde el repositorio Icechunk (solo si falta data/)
+zarr==3.4.2
+icechunk==2.3.1
+
+# Librería de olas de calor marinas: versión publicada 0.0.1
+xhw @ git+https://github.com/DanielCamarena/xhw.git@aa44a807ecc512e1f545b57f4e45462bdfd111a0
+
+# marineHeatWaves (Eric Oliver) NO se instala con pip: la versión publicada
+# falla con numpy >= 2. Se usa la copia parcheada en vendor/marineHeatWaves.py.

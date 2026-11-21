@@ -1,0 +1,23 @@
+# Entorno de referencia LOCAL del taller ReMoHES PUCP 2026 (remohes-env/).
+# Reproduce Google Colab (Python 3.13.18, noviembre 2026): fija las versiones
+# que Colab trae preinstaladas y añade los paquetes que Colab no trae
+# (requirements-colab.txt, lo único que se instala en Colab).
+#
+#   conda create -p ./remohes-env python=3.13
+#   remohes-env/python -m pip install -r requirements.txt
+
+# --- Preinstalados en Colab: se fijan a sus versiones ---
+numpy==2.4.6
+pandas==2.2.3
+xarray==2025.12.0
+matplotlib==3.10.0
+scipy==1.16.3
+h5py==3.16.0
+
+# --- Lo que Colab no trae ---
+-r requirements-colab.txt
+
+# --- Solo local: ejecutar y exportar el cuaderno ---
+jupyterlab
+ipykernel
+nbconvert

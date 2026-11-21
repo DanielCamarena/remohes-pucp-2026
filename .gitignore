@@ -1,0 +1,15 @@
+# Entorno local (se recrea con requirements.txt)
+remohes-env/
+
+# Descarga parcial de OISST (reanudable, se regenera con scripts/descargar_oisst.py)
+data/.partes*/
+data/*.tmp
+data/*.tmp.nc
+
+# Python / Jupyter
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Vista HTML local del cuaderno (scripts/compilar.py --html)
+*.html
