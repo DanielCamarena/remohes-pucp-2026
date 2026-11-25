@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Two-pass connected-component labelling (interactive)</title><style>
+*{box-sizing:border-box}
+html,body{margin:0;background:#fff;color:#111;font-family:"Segoe UI",Arial,Helvetica,sans-serif}
+.app{display:flex;flex-direction:column;min-height:100vh;height:100vh;padding:8px 14px}
+header{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px}
+h1{font-size:22px;margin:0}
+button,select{font:inherit;font-size:17px;padding:6px 12px;border:2px solid #333;border-radius:8px;
+ background:#fff;color:#111;cursor:pointer}
+button:hover:not(:disabled){background:#eef4fa}
+button:disabled{opacity:.35;cursor:default}
+button.on,button.on:hover:not(:disabled){background:#0072B2;color:#fff;border-color:#0072B2}
+button.hl{background:#E69F00;border-color:#8a5f00;font-weight:600}
+.seg{display:inline-flex;gap:0}.seg button{border-radius:0}.seg button:first-child{border-radius:8px 0 0 8px}
+.seg button:last-child{border-radius:0 8px 8px 0;border-left-width:0}
+#msg{font-size:19px;min-height:56px;padding:6px 0;line-height:1.3}
+#msg b{color:#D55E00}
+main{flex:1;min-height:0;display:grid;gap:12px;grid-template-columns:minmax(0,1fr) minmax(300px,500px);
+ grid-template-rows:minmax(0,1fr)}
+#gs{width:100%;height:100%;display:block;touch-action:manipulation}
+#gs.edit{cursor:pointer}
+#gs text{font-family:inherit}
+.panel{display:flex;flex-direction:column;gap:8px;min-height:0;font-size:17px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button{padding:4px 10px;font-size:16px}
+.row{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:flex-start}
+.cnt div{line-height:1.5}.cnt b{font-size:20px}
+.cap{font-size:16px;color:#333;max-width:190px;line-height:1.25}
+.tbl{flex:1;min-height:120px;overflow:auto;border:2px solid #ccc;border-radius:8px;position:relative}
+table{border-collapse:collapse;width:100%;font-size:16px}
+.two{display:flex;gap:6px;align-items:flex-start}.two table{flex:1}
+th,td{padding:2px 5px;line-height:1.2;text-align:center;border-bottom:1px solid #ddd}
+th{position:sticky;top:0;background:#f0f0f0;font-size:16px}
+tr.new td{background:#d6efe6}tr.chg td{background:#fde3c4}
+.ctl{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;padding-top:8px;font-size:17px}
+.ctl label{display:flex;align-items:center;gap:8px}
+input[type=range]{width:min(30vw,300px);height:28px;accent-color:#0072B2}
+input[type=checkbox]{width:20px;height:20px}
+@media (max-width:820px){
+ .app{height:auto;min-height:100vh;padding:6px 8px}
+ h1{font-size:19px}
+ main{display:block}
+ #gs{height:auto;margin-bottom:8px}
+ .tbl{max-height:260px}
+ button,select{font-size:16px;padding:6px 10px}
+ input[type=range]{width:44vw}
+}
+</style></head><body><div class="app">
+<header><h1>Two-pass connected-component labelling</h1>
+<div class="seg" id="cn"><button id="c4" class="on">4 neighbours</button><button id="c8">8 neighbours</button></div>
+<div><button id="ed">Edit grid</button> <button id="ex">Reset example</button> <button id="rn">Random</button></div></header>
+<div id="msg"></div>
+<main><svg id="gs" viewBox="0 0 568 568" preserveAspectRatio="xMidYMid meet"></svg>
+<div class="panel">
+<div class="chips"><button id="p1">1 Pass 1</button><button id="p2">2 Resolve</button><button id="p3">3 Pass 2</button></div>
+<div class="row"><div><svg id="st" width="168" height="168" viewBox="0 0 168 168"></svg>
+<div class="cap" id="cap">Blue dashed: neighbours already visited by the scan.</div></div>
+<div class="cnt"><div>Provisional labels<br><b id="kc">0</b></div><div>Final components<br><b id="mc">-</b></div></div></div>
+<div class="tbl" id="tb"></div></div></main>
+<div class="ctl"><button id="prev">&larr; Previous</button><button id="play">&#9654; Play</button>
+<button id="next">Next &rarr;</button>
+<label>Step <input id="sl" type="range" min="0" value="0"><b id="slv">0</b></label>
+<label>Speed <select id="sp"><option value="1300">Slow</option><option value="650" selected>Normal</option>
+<option value="260">Fast</option><option value="80">Very fast</option></select></label>
+<label><input type="checkbox" id="sk" checked> Skip background</label>
+<button id="rst">Restart</button><button id="e1">End of pass 1</button><button id="fin">Finish</button></div>
+</div>
+<script>
+const D={"N":10,"example":[[1,0,0,1,0,1,0,0,0,1],[1,0,0,1,0,1,1,0,1,1],[1,0,0,1,0,0,1,1,1,0],[1,1,1,1,0,0,0,1,0,0],[0,0,0,0,0,0,0,0,0,0],[1,1,0,0,0,0,0,0,1,0],[1,1,0,0,0,0,0,1,0,0],[0,0,1,1,0,0,1,0,0,0],[0,0,1,1,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0]],"palette":["#0072B2","#E69F00","#009E73","#D55E00","#56B4E9","#CC79A7","#F0E442"]};const PAL=D.palette,N=D.N,CS=54,MG=14;
+let grid=D.example.map(r=>r.slice()),conn=4,steps=[],vis=[],cur=0,skipBg=true,edit=false,timer=null,seed=3;
+const STEN={4:[[0,-1,'W'],[-1,0,'N']],8:[[0,-1,'W'],[-1,-1,'NW'],[-1,0,'N'],[-1,1,'NE']]};
+const $=id=>document.getElementById(id);
+function LT(n){let t='';while(n>0){n--;t=String.fromCharCode(65+n%26)+t;n=Math.floor(n/26);}return t;}
+function NS(tag,a,p,t){const e=document.createElementNS('http://www.w3.org/2000/svg',tag);
+ for(const k in a)e.setAttribute(k,a[k]);if(t!==undefined)e.textContent=t;if(p)p.appendChild(e);return e;}
+/* ---- algorithm: builds the whole trace (one snapshot per step) -------------------------------- */
+function trace(g,cn){
+ const R=g.length,C=g[0].length,lab=g.map(r=>r.map(()=>0)),par=[0],S=[];let K=0,fin=null,M=null;
+ const find=x=>{while(par[x]!==x)x=par[x];return x;};
+ const snap=o=>S.push(Object.assign({lab:lab.map(r=>r.slice()),par:par.slice(),K,fin,M,nb:[],r:-1,c:-1,
+  newL:0,chg:[]},o));
+ snap({ph:0,kind:'init',text:'<b>Pass 1</b> scans left to right, top to bottom. An object cell looks only at neighbours '
+  +'already visited: '+(cn===4?'West and North.':'West, North-West, North and North-East.')});
+ for(let r=0;r<R;r++)for(let c=0;c<C;c++){
+  const nb=[];for(const [dr,dc,nm] of STEN[cn]){const rr=r+dr,cc=c+dc;
+   if(rr>=0&&cc>=0&&cc<C)nb.push({r:rr,c:cc,nm,l:lab[rr][cc]});}
+  if(!g[r][c]){snap({ph:1,kind:'bg',r,c,nb:[],text:'Background cell: nothing to label.'});continue;}
+  const ls=[...new Set(nb.filter(x=>x.l>0).map(x=>x.l))].sort((a,b)=>a-b);
+  if(!ls.length){K++;par[K]=K;lab[r][c]=K;
+   snap({ph:1,kind:'new',r,c,nb,newL:K,text:'No labelled neighbour &rarr; <b>new label '+K+'</b>'});}
+  else if(ls.length===1){lab[r][c]=ls[0];
+   snap({ph:1,kind:'copy',r,c,nb,text:'One label &rarr; <b>copy '+ls[0]+'</b>'});}
+  else{const m=ls[0],rec=[],chg=[];lab[r][c]=m;
+   for(const l of ls.slice(1)){const a=find(l),b=find(m);
+    if(a!==b){par[Math.max(a,b)]=Math.min(a,b);chg.push(Math.max(a,b));rec.push(l+' = '+m);}
+    else rec.push(l+' = '+m+' (already known)');}
+   snap({ph:1,kind:'merge',r,c,nb,chg,text:'Labels {'+ls.join(', ')+'} &rarr; take <b>'+m+'</b>, record <b>'+rec.join(', ')+'</b>'});}
+ }
+ // resolve equivalences (union-find: the root of every class is its smallest label)
+ const fm=[0],id={};M=0;
+ for(let l=1;l<=K;l++)if(find(l)===l){M++;id[l]=M;}
+ for(let l=1;l<=K;l++)fm[l]=id[find(l)];fin=fm;
+ const cls={};for(let l=1;l<=K;l++)(cls[find(l)]=cls[find(l)]||[]).push(l);
+ const parts=Object.keys(cls).map(k=>'{'+cls[k].join(', ')+'} &rarr; '+LT(id[k]));
+ snap({ph:2,kind:'resolve',text:'<b>Resolve equivalences</b> (union-find): '+K+' provisional labels &rarr; <b>'+M+'</b> components. '
+  +parts.join('; ')});
+ for(let r=0;r<R;r++)for(let c=0;c<C;c++){
+  if(!g[r][c]){snap({ph:3,kind:'bg',r,c,text:'<b>Pass 2:</b> background cell.'});continue;}
+  const o=lab[r][c],n=fm[o];lab[r][c]=n;
+  snap({ph:3,kind:'relabel',r,c,text:'<b>Pass 2:</b> provisional '+o+' &rarr; final <b>'+LT(n)+'</b>'});}
+ snap({ph:3,kind:'done',text:'<b>Done:</b> '+K+' provisional labels, <b>'+M+'</b> connected components ('+cn+'-neighbour connectivity).'});
+ return S;}
+function run(g,cn){const S=trace(g,cn),s=S[S.length-1];return {labels:s.lab.map(r=>r.slice()),K:s.K,M:s.M,steps:S.length};}
+window.__ccl={run,setGrid(g,cn){
+  if(!Array.isArray(g)||g.length!==N||!g.every(r=>Array.isArray(r)&&r.length===N))
+   throw new Error('setGrid: the grid must be a '+N+' x '+N+' rectangular array');
+  if(cn!==4&&cn!==8)throw new Error('setGrid: connectivity must be 4 or 8');
+  grid=g.map(r=>r.map(v=>v?1:0));setConn(cn);},
+ finish(){stop();cur=steps.length-1;draw();},
+ labels(){return [...document.querySelectorAll('#gs g[data-r]')].map(e=>[+e.dataset.r,+e.dataset.c,+e.dataset.lab]);}};
+/* ---- state helpers ---------------------------------------------------------------------------- */
+function buildVis(){vis=[];steps.forEach((s,i)=>{if(!(skipBg&&s.kind==='bg'))vis.push(i);});
+ $('sl').max=vis.length-1;}
+function visPos(){let p=0;for(let i=0;i<vis.length;i++)if(vis[i]<=cur)p=i;return p;}
+function rebuild(){stop();steps=trace(grid,conn);cur=0;buildVis();draw();}
+function setConn(c){conn=c;$('c4').className=c===4?'on':'';$('c8').className=c===8?'on':'';rebuild();}
+function go(p){p=Math.max(0,Math.min(vis.length-1,p));cur=vis[p];draw();}
+function stop(){if(timer){clearInterval(timer);timer=null;$('play').innerHTML='&#9654; Play';}}
+function firstOf(ph){for(let i=0;i<steps.length;i++)if(steps[i].ph===ph&&!(skipBg&&steps[i].kind==='bg'))return i;return 0;}
+/* ---- drawing ---------------------------------------------------------------------------------- */
+function draw(){
+ const s=steps[cur],gs=$('gs');gs.innerHTML='';gs.classList.toggle('edit',edit);
+ const here=s.r*N+s.c;
+ for(let r=0;r<N;r++)for(let c=0;c<N;c++){
+  const x=MG+c*CS,y=MG+r*CS,obj=grid[r][c],L=s.lab[r][c],idx=r*N+c;
+  const fin3=s.ph===3&&(s.kind==='done'||idx<=here);
+  const g=NS('g',{'data-r':r,'data-c':c,'data-lab':obj?L:0},gs);
+  let fill='#f4f4f4',op=1,txt='';
+  if(obj){if(L===0){fill='#555';}
+   else if(fin3){fill=PAL[(L-1)%7];txt=LT(L);}
+   else{fill=PAL[((s.ph>=2?s.fin[L]:L)-1)%7];op=.4;txt=L;}}
+  NS('rect',{x,y,width:CS-2,height:CS-2,rx:4,fill,'fill-opacity':op,stroke:obj?'#333':'#ccc','stroke-width':obj?1.5:1},g);
+  if(txt!=='')NS('text',{x:x+CS/2-1,y:y+CS/2+9,'text-anchor':'middle','font-size':28,'font-weight':700,fill:'#111',
+   style:'paint-order:stroke;stroke:#fff;stroke-width:4px;stroke-linejoin:round'},g,txt);}
+ if(s.ph===1)s.nb.forEach(n=>NS('rect',{x:MG+n.c*CS+3,y:MG+n.r*CS+3,width:CS-8,height:CS-8,rx:4,fill:'none',stroke:'#0072B2',
+  'stroke-width':n.l>0?5:3,'stroke-dasharray':'8 5','pointer-events':'none'},gs));
+ if(s.r>=0)NS('rect',{x:MG+s.c*CS,y:MG+s.r*CS,width:CS-2,height:CS-2,rx:4,fill:'none',stroke:'#D55E00','stroke-width':6,'pointer-events':'none'},gs);
+ // stencil
+ const st=$('st');st.innerHTML='';
+ $('cap').textContent=s.ph>=2?'':'Blue dashed: neighbours already visited by the scan.';
+ if(s.ph>=2){const L2=s.ph===2?['Merging','equivalent','labels into','classes','(union-find)']:['Replacing each','provisional','number by its','final letter','(table lookup)'];
+  NS('rect',{x:4,y:4,width:160,height:160,rx:6,fill:'#f4f4f4',stroke:'#ccc'},st);
+  L2.forEach((t,i)=>NS('text',{x:84,y:36+i*28,'text-anchor':'middle','font-size':19,fill:'#333'},st,t));}
+ else for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){
+  const x=4+(dc+1)*54,y=4+(dr+1)*54,def=STEN[conn].find(q=>q[0]===dr&&q[1]===dc);
+  if(dr===0&&dc===0){NS('rect',{x,y,width:52,height:52,rx:4,fill:'#fff',stroke:'#D55E00','stroke-width':5},st);
+   NS('text',{x:x+26,y:y+34,'text-anchor':'middle','font-size':18,'font-weight':700},st,'cell');continue;}
+  NS('rect',{x,y,width:52,height:52,rx:4,fill:def?'#fff':'#e6e6e6',stroke:def?'#0072B2':'#bbb','stroke-width':def?4:1,
+   'stroke-dasharray':def?'8 5':''},st);
+  if(def){NS('text',{x:x+26,y:y+22,'text-anchor':'middle','font-size':16,fill:'#333'},st,def[2]);
+   const n=(s.ph===1?s.nb:[]).find(q=>q.nm===def[2]);
+   NS('text',{x:x+26,y:y+44,'text-anchor':'middle','font-size':22,'font-weight':700,fill:'#111'},st,
+    n?(n.l>0?n.l:'bg'):'');}}
+ // table
+ const HD='<table><tr><th>Provisional label</th><th>Points to</th>'+(s.ph>=2?'<th>Final component</th>':'')+'</tr>',hi0=[];let hi=-1;
+ const rows=[];
+ for(let l=1;l<=s.K;l++){const cl=l===s.newL?'new':(s.chg.includes(l)?'chg':'');if(cl)hi=l;
+  rows.push('<tr class="'+cl+'" id="tr'+l+'"><td><b>'+l+'</b></td><td>'+(s.par[l]===l?'-':s.par[l])+'</td>'
+   +(s.ph>=2?'<td><b>'+LT(s.fin[l])+'</b></td>':'')+'</tr>');}
+ let h;
+ if(!s.K)h=HD+'<tr><td colspan="3" style="text-align:left">Empty: labels appear as the scan creates them.</td></tr></table>';
+ else if(s.K<=6)h=HD+rows.join('')+'</table>';
+ else{const half=Math.ceil(s.K/2);h='<div class="two">'+HD+rows.slice(0,half).join('')+'</table>'+HD+rows.slice(half).join('')+'</table></div>';}
+ $('tb').innerHTML=h;
+ if(hi>0){const e=$('tr'+hi);$('tb').scrollTop=Math.max(0,e.offsetTop-$('tb').clientHeight/2);}
+ $('kc').textContent=s.K;$('mc').textContent=s.ph>=2?s.M:'-';
+ let msg=s.text;if(s.r>=0)msg='(row '+(s.r+1)+', col '+(s.c+1)+') '+msg;
+ if(edit)msg='<b>Edit mode:</b> click or tap a cell to toggle background/object; the algorithm restarts. '+msg;
+ $('msg').innerHTML=msg;
+ const p=visPos();$('sl').value=p;$('slv').textContent=p+' / '+(vis.length-1);
+ $('prev').disabled=p===0;$('next').disabled=p===vis.length-1;$('fin').disabled=cur===steps.length-1;
+ ['p1','p2','p3'].forEach((id,i)=>$(id).className=(s.ph===i+1||(i===0&&s.ph===0))?'on':'');
+ $('e1').disabled=s.ph>=2;
+}
+/* ---- controls --------------------------------------------------------------------------------- */
+$('c4').onclick=()=>setConn(4);$('c8').onclick=()=>setConn(8);
+$('prev').onclick=()=>{stop();go(visPos()-1);};$('next').onclick=()=>{stop();go(visPos()+1);};
+$('sl').oninput=e=>{stop();go(+e.target.value);};
+$('rst').onclick=()=>{stop();cur=0;draw();};
+$('fin').onclick=()=>{stop();cur=steps.length-1;draw();};
+$('e1').onclick=()=>{stop();let i=0;while(steps[i].ph<2)i++;i--;
+ while(i>0&&skipBg&&steps[i].kind==='bg')i--;  // skip trailing background steps only when they are hidden
+ cur=i;draw();
+ if(steps[i].ph!==1)$('msg').innerHTML='<b>End of pass 1:</b> no visible step in pass 1 (all cells are hidden background).';};
+$('p1').onclick=()=>{stop();cur=0;draw();};$('p2').onclick=()=>{stop();cur=firstOf(2);draw();};
+$('p3').onclick=()=>{stop();cur=firstOf(3);draw();};
+$('sk').onchange=e=>{skipBg=e.target.checked;buildVis();cur=vis[visPos()];draw();};
+function tick(){if(visPos()>=vis.length-1){stop();return;}go(visPos()+1);if(visPos()>=vis.length-1)stop();}
+$('play').onclick=()=>{if(timer){stop();return;}if(visPos()>=vis.length-1){cur=0;}
+ $('play').innerHTML='&#10074;&#10074; Pause';timer=setInterval(tick,+$('sp').value);draw();};
+$('sp').onchange=()=>{if(timer){clearInterval(timer);timer=setInterval(tick,+$('sp').value);}};
+$('ed').onclick=()=>{edit=!edit;$('ed').className=edit?'on':'';stop();cur=0;draw();};
+$('ex').onclick=()=>{grid=D.example.map(r=>r.slice());rebuild();};
+function rng(){seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;}
+$('rn').onclick=()=>{seed=(Date.now()&0xffffff)+1;grid=grid.map(r=>r.map(()=>rng()<.42?1:0));rebuild();};
+$('gs').addEventListener('pointerdown',e=>{if(!edit)return;const g=e.target.closest('g[data-r]');if(!g)return;
+ const r=+g.dataset.r,c=+g.dataset.c;grid[r][c]=grid[r][c]?0:1;e.preventDefault();rebuild();});
+document.addEventListener('keydown',e=>{if(e.key!=='ArrowRight'&&e.key!=='ArrowLeft')return;
+ const t=e.target;if(t&&t.closest&&t.closest('select,input,textarea,[contenteditable]'))return;  // let form controls use the arrows
+ stop();go(visPos()+(e.key==='ArrowRight'?1:-1));e.preventDefault();});
+rebuild();
+</script></body></html>

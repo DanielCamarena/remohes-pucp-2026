@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Two-pass labelling in the cube (interactive)</title><style>
+*{box-sizing:border-box}
+html,body{margin:0;background:#fff;color:#111;font-family:"Segoe UI",Arial,Helvetica,sans-serif}
+.app{display:flex;flex-direction:column;height:100vh;min-height:100vh;padding:6px 12px;gap:2px}
+header{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px}
+h1{font-size:20px;margin:0}
+button,select{font:inherit;font-size:16px;padding:4px 10px;border:2px solid #333;border-radius:8px;
+ background:#fff;color:#111;cursor:pointer}
+button:hover:not(:disabled){background:#eef4fa}
+button:disabled{opacity:.35;cursor:default}
+button.on,button.on:hover:not(:disabled){background:#0072B2;color:#fff;border-color:#0072B2}
+.seg{display:inline-flex}.seg button{border-radius:0}.seg button:first-child{border-radius:8px 0 0 8px}
+.seg button:last-child{border-radius:0 8px 8px 0;border-left-width:0}
+#msg{font-size:18px;min-height:50px;padding:2px 0;line-height:1.3}
+#msg b{color:#D55E00}
+#gs{width:100%;height:auto;display:block;flex:0 0 auto}
+#gs text{font-family:inherit}
+.panel{flex:1;min-height:0;display:flex;gap:12px;font-size:16px}
+.tbl{flex:1;min-height:0;overflow:auto;border:2px solid #ccc;border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:16px}
+.two{display:flex;gap:6px;align-items:flex-start}.two table{flex:1}
+th,td{padding:1px 5px;line-height:1.2;text-align:center;border-bottom:1px solid #ddd}
+th{position:sticky;top:0;background:#f0f0f0}
+tr.new td{background:#d6efe6}tr.chg td{background:#fde3c4}
+.side{flex:0 0 300px;display:flex;flex-direction:column;gap:4px;line-height:1.3}
+.side .cnt{display:flex;gap:18px}.side .cnt b{font-size:20px}
+.lg{display:flex;align-items:center;gap:8px}
+.sw{display:inline-block;width:20px;height:20px;border-radius:4px;border:3px solid;flex:0 0 auto}
+.ctl{display:flex;flex-wrap:wrap;gap:5px 8px;align-items:center;padding-top:4px;font-size:16px}
+.ctl label{display:flex;align-items:center;gap:6px}
+input[type=range]{width:150px;height:24px;accent-color:#0072B2}
+input[type=checkbox]{width:18px;height:18px}
+</style></head><body><div class="app">
+<header><h1>Two-pass labelling in the cube (day, row, column)</h1>
+<div class="seg"><button id="c6" class="on">6 neighbours</button><button id="c26">26 neighbours</button></div></header>
+<div id="msg"></div>
+<svg id="gs" viewBox="0 0 904 302" preserveAspectRatio="xMidYMin meet"></svg>
+<div class="panel"><div class="tbl" id="tb"></div>
+<div class="side"><div class="cnt"><div>Provisional labels<br><b id="kc">0</b></div><div>Final components<br><b id="mc">-</b></div></div>
+<div class="lg"><span class="sw" style="border-color:#D55E00"></span>current cell</div>
+<div class="lg"><span class="sw" style="border-color:#0072B2;border-style:dashed"></span>visited neighbour, same day</div>
+<div class="lg"><span class="sw" style="border-color:#CC79A7;border-style:dashed"></span>visited neighbour, <b>previous day</b></div>
+</div></div>
+<div class="ctl"><button id="prev">&larr; Previous</button><button id="play">&#9654; Play</button>
+<button id="next">Next &rarr;</button>
+<label>Step <input id="sl" type="range" min="0" value="0"><b id="slv">0</b></label>
+<label>Speed <select id="sp"><option value="1300">Slow</option><option value="500" selected>Normal</option>
+<option value="200">Fast</option><option value="60">Very fast</option></select></label>
+<label><input type="checkbox" id="sk" checked> Skip background</label>
+<button id="rst">Restart</button><button id="e1">End of pass 1</button><button id="rs">Resolve</button>
+<button id="p2">Pass 2</button><button id="fin">Finish</button></div>
+</div>
+<script>
+const D={"vol":[[[1,0,1,0,0,0],[1,0,1,0,0,0],[1,1,1,0,0,0],[0,0,0,0,1,0],[0,0,0,1,1,0],[0,0,0,0,0,0]],[[1,0,1,0,1,0],[1,0,1,0,0,0],[1,1,1,0,0,0],[0,0,0,0,0,0],[0,0,0,1,1,0],[0,0,0,0,0,0]],[[0,0,0,0,1,0],[1,0,1,0,1,0],[1,1,1,0,0,0],[0,0,0,0,0,0],[0,0,0,0,0,0],[0,0,0,0,1,1]],[[0,0,0,0,1,0],[0,0,0,0,1,1],[0,0,0,0,0,0],[0,0,0,0,0,0],[0,0,0,0,0,1],[0,0,0,0,1,1]]],"palette":["#0072B2","#E69F00","#009E73","#D55E00","#56B4E9","#CC79A7","#F0E442"],"expected":{"6":{"n":4,"n_prov":7},"26":{"n":3,"n_prov":4}}};const PAL=D.palette,NT=D.vol.length,NY=D.vol[0].length,NX=D.vol[0][0].length;
+const CS=33,GW=CS*NX,GAP=(904-12-4*GW)/3,TOP=38;  // smaller cells, wider gap between days; room for the frames
+let conn=6,steps=[],vis=[],cur=0,skipBg=true,timer=null;
+const $=id=>document.getElementById(id);
+function LT(n){let t='';while(n>0){n--;t=String.fromCharCode(65+n%26)+t;n=Math.floor(n/26);}return t;}
+function NS(tag,a,p,t){const e=document.createElementNS('http://www.w3.org/2000/svg',tag);
+ for(const k in a)e.setAttribute(k,a[k]);if(t!==undefined)e.textContent=t;if(p)p.appendChild(e);return e;}
+function offsets(cn){const o=[];for(let dt=-1;dt<=0;dt++)for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
+ if(dt>0||(dt===0&&(dy>0||(dy===0&&dx>=0))))continue;
+ if(cn===6&&Math.abs(dt)+Math.abs(dy)+Math.abs(dx)!==1)continue;o.push([dt,dy,dx]);}return o;}
+/* ---- algorithm: builds the whole trace (one snapshot per step) ----------------------------------- */
+function trace(cn){
+ const V=D.vol,lab=V.map(a=>a.map(r=>r.map(()=>0))),par=[0],S=[],OF=offsets(cn);let K=0,fin=null,M=null;
+ const cp=()=>lab.map(a=>a.map(r=>r.slice()));
+ const find=x=>{while(par[x]!==x)x=par[x];return x;};
+ const snap=o=>S.push(Object.assign({lab:cp(),par:par.slice(),K,fin,M,nb:[],t:-1,y:-1,x:-1,newL:0,chg:[]},o));
+ snap({ph:0,kind:'init',text:'<b>Pass 1</b> scans the cube in order (day, row, column). A cell looks only at neighbours already visited: '
+  +(cn===6?'West, North and the cell below it in the previous day.':'W, NW, N, NE of the same day and the 3x3 block in the previous day.')});
+ for(let t=0;t<NT;t++)for(let y=0;y<NY;y++)for(let x=0;x<NX;x++){
+  const pos='Day '+(t+1)+', row '+(y+1)+', col '+(x+1)+': ';
+  if(!V[t][y][x]){snap({ph:1,kind:'bg',t,y,x,text:pos+'no heatwave, nothing to label.'});continue;}
+  const nb=[];for(const [dt,dy,dx] of OF){const tt=t+dt,yy=y+dy,xx=x+dx;
+   if(tt>=0&&yy>=0&&yy<NY&&xx>=0&&xx<NX)nb.push({t:tt,y:yy,x:xx,l:lab[tt][yy][xx]});}
+  const ls=[...new Set(nb.filter(q=>q.l>0).map(q=>q.l))].sort((a,b)=>a-b);
+  const diag=nb.some(q=>q.l>0&&q.t<t&&(q.y!==y||q.x!==x));
+  const sfx=diag?' (found <b>diagonally in the previous day</b>)':'';
+  if(!ls.length){K++;par[K]=K;lab[t][y][x]=K;
+   snap({ph:1,kind:'new',t,y,x,nb,newL:K,text:pos+'no labelled neighbour &rarr; <b>new label '+K+'</b>'});}
+  else if(ls.length===1){lab[t][y][x]=ls[0];
+   snap({ph:1,kind:'copy',t,y,x,nb,text:pos+'one label &rarr; <b>copy '+ls[0]+'</b>'+sfx});}
+  else{const m=ls[0],rec=[],known=[],chg=[];lab[t][y][x]=m;
+   for(const l of ls.slice(1)){const a=find(l),b=find(m);
+    if(a!==b){par[Math.max(a,b)]=Math.min(a,b);chg.push(Math.max(a,b));rec.push(l+' = '+m);}
+    else known.push(l+' = '+m);}
+   const what=(rec.length?'record <b>'+rec.join(', ')+'</b>':'')+(rec.length&&known.length?'; ':'')
+    +(known.length?known.join(', ')+' already equivalent'+(rec.length?'':' (table unchanged)'):'');
+   snap({ph:1,kind:'merge',t,y,x,nb,chg,text:pos+'labels {'+ls.join(', ')+'} &rarr; take <b>'+m+'</b>, '+what+sfx});}
+ }
+ const fm=[0],id={};M=0;
+ for(let l=1;l<=K;l++)if(find(l)===l){M++;id[l]=M;}
+ for(let l=1;l<=K;l++)fm[l]=id[find(l)];fin=fm;
+ const cls={};for(let l=1;l<=K;l++)(cls[find(l)]=cls[find(l)]||[]).push(l);
+ const parts=Object.keys(cls).map(k=>'{'+cls[k].join(', ')+'} &rarr; '+LT(id[k]));
+ snap({ph:2,kind:'resolve',text:'<b>Resolve equivalences</b>: '+K+' provisional labels &rarr; <b>'+M+'</b> components. '+parts.join('; ')});
+ for(let t=0;t<NT;t++)for(let y=0;y<NY;y++)for(let x=0;x<NX;x++){
+  const pos='Day '+(t+1)+', row '+(y+1)+', col '+(x+1)+': ';
+  if(!V[t][y][x]){snap({ph:3,kind:'bg',t,y,x,text:'<b>Pass 2:</b> background cell.'});continue;}
+  const o=lab[t][y][x],n=fm[o];lab[t][y][x]=n;
+  snap({ph:3,kind:'relabel',t,y,x,text:'<b>Pass 2:</b> '+pos+'provisional '+o+' &rarr; final <b>'+LT(n)+'</b>'});}
+ snap({ph:3,kind:'done',text:'<b>Done:</b> '+K+' provisional labels, <b>'+M+'</b> connected components with '+cn+' neighbours.'
+  +(cn===26?' The diagonal link (day 2 &rarr; day 3) fuses two patches.':' The two patches touching only diagonally stay separate.')});
+ return S;}
+function run(cn){const S=trace(cn),s=S[S.length-1];return {labels:s.lab,K:s.K,M:s.M,steps:S.length};}
+window.__ccl={run,finish(){stop();cur=steps.length-1;draw();},setConn(c){setConn(c);},
+ count(){return steps.length;}};
+/* ---- state helpers --------------------------------------------------------------------------------- */
+function buildVis(){vis=[];steps.forEach((s,i)=>{if(!(skipBg&&s.kind==='bg'))vis.push(i);});$('sl').max=vis.length-1;}
+function visPos(){let p=0;for(let i=0;i<vis.length;i++)if(vis[i]<=cur)p=i;return p;}
+function setConn(c){stop();conn=c;$('c6').className=c===6?'on':'';$('c26').className=c===26?'on':'';
+ steps=trace(c);cur=0;buildVis();draw();}
+function go(p){p=Math.max(0,Math.min(vis.length-1,p));cur=vis[p];draw();}
+function stop(){if(timer){clearInterval(timer);timer=null;$('play').innerHTML='&#9654; Play';}}
+function firstOf(ph){for(let i=0;i<steps.length;i++)if(steps[i].ph===ph&&!(skipBg&&steps[i].kind==='bg'))return i;return 0;}
+/* ---- drawing --------------------------------------------------------------------------------------- */
+function gx(t){return 6+t*(GW+GAP);}
+function cc(t,y,x){return [gx(t)+x*CS+CS/2,TOP+y*CS+CS/2];}
+function draw(){
+ const s=steps[cur],gs=$('gs');gs.innerHTML='';
+ const here=s.t<0?-1:(s.t*NY+s.y)*NX+s.x;
+ for(let t=0;t<NT;t++){
+  const prevDay=s.ph===1&&s.t>0&&t===s.t-1,curDay=s.ph===1&&s.t===t;
+  NS('text',{x:gx(t)+GW/2,y:22,'text-anchor':'middle','font-size':19,'font-weight':700,
+   fill:curDay?'#D55E00':(prevDay?'#B0508A':'#111')},gs,'Day '+(t+1)+(curDay?' (current)':(prevDay?' (previous)':'')));
+  /* frame around each day so the four grids read as separate days */
+  NS('rect',{x:gx(t)-4,y:TOP-4,width:GW+7,height:NY*CS+7,rx:6,fill:'#f4f6f8',
+   stroke:curDay?'#D55E00':(prevDay?'#B0508A':'#12324a'),'stroke-width':curDay||prevDay?4:2.5},gs);
+  for(let y=0;y<NY;y++)for(let x=0;x<NX;x++){
+   const X=gx(t)+x*CS,Y=TOP+y*CS,obj=D.vol[t][y][x],L=s.lab[t][y][x],idx=(t*NY+y)*NX+x;
+   const fin3=s.ph===3&&(s.kind==='done'||idx<=here);
+   let fill='#fff',op=1,txt='';
+   if(obj){if(L===0)fill='#555';
+    else if(fin3){fill=PAL[(L-1)%7];txt=LT(L);}
+    else{fill=PAL[((s.ph>=2?s.fin[L]:L)-1)%7];op=.4;txt=L;}}
+   NS('rect',{x:X,y:Y,width:CS-1,height:CS-1,rx:3,fill,'fill-opacity':op,stroke:obj?'#333':'#ccc','stroke-width':obj?1.5:1},gs);
+   if(txt!=='')NS('text',{x:X+CS/2,y:Y+CS/2+7,'text-anchor':'middle','font-size':19,'font-weight':700,fill:'#111',
+    style:'paint-order:stroke;stroke:#fff;stroke-width:3px;stroke-linejoin:round'},gs,txt);}}
+ if(s.ph===1&&s.t>=0){
+  if(s.t>0&&conn===26&&s.nb&&s.nb.length){/* background cells consult no neighbours */const x0=Math.max(0,s.x-1),x1=Math.min(NX-1,s.x+1),y0=Math.max(0,s.y-1),y1=Math.min(NY-1,s.y+1);
+   NS('rect',{x:gx(s.t-1)+x0*CS-1,y:TOP+y0*CS-1,width:(x1-x0+1)*CS+1,height:(y1-y0+1)*CS+1,rx:4,fill:'#CC79A7','fill-opacity':.15,
+    stroke:'#CC79A7','stroke-width':2.5},gs);}
+  (s.nb||[]).forEach(n=>{const prev=n.t<s.t;
+   NS('rect',{x:gx(n.t)+n.x*CS+3,y:TOP+n.y*CS+3,width:CS-7,height:CS-7,rx:3,fill:'none',stroke:prev?'#CC79A7':'#0072B2',
+    'stroke-width':n.l>0?5:3,'stroke-dasharray':'7 4'},gs);});
+  const labelled=(s.nb||[]).filter(n=>n.l>0&&n.t<s.t);
+  labelled.forEach(n=>{const a=cc(n.t,n.y,n.x),b=cc(s.t,s.y,s.x),mx=(a[0]+b[0])/2,my=Math.min(a[1],b[1])-30;
+   NS('path',{d:'M'+a[0]+' '+a[1]+' Q'+mx+' '+my+' '+b[0]+' '+b[1],fill:'none',stroke:'#B0508A','stroke-width':3.5,
+    'stroke-linecap':'round','marker-end':'url(#ah)'},gs);});
+ }
+ const defs=NS('defs',{},gs);const mk=NS('marker',{id:'ah',markerWidth:7,markerHeight:7,refX:5,refY:3.5,orient:'auto'},defs);
+ NS('path',{d:'M0 0L7 3.5L0 7z',fill:'#B0508A'},mk);
+ if(s.t>=0)NS('rect',{x:gx(s.t)+s.x*CS-1,y:TOP+s.y*CS-1,width:CS+1,height:CS+1,rx:4,fill:'none',stroke:'#D55E00','stroke-width':5},gs);
+ if(s.ph>=2){const a=cc(1,4,4),b=cc(2,5,4),is26=conn===26,col=is26?'#000':'#777';
+  [[1,4,4],[2,5,4]].forEach(q=>NS('rect',{x:gx(q[0])+q[2]*CS-2,y:TOP+q[1]*CS-2,width:CS+3,height:CS+3,rx:4,fill:'none',stroke:col,
+   'stroke-width':is26?5:3,'stroke-dasharray':is26?'':'5 4'},gs));
+  NS('path',{d:'M'+a[0]+' '+a[1]+' L'+b[0]+' '+b[1],fill:'none',stroke:col,'stroke-width':is26?5:3,'stroke-dasharray':is26?'':'5 4'},gs);
+  NS('text',{x:(a[0]+b[0])/2,y:TOP+NY*CS+22,'text-anchor':'middle','font-size':17,'font-weight':700,fill:col},gs,
+   is26?'diagonal link: fuses the two patches':'diagonal only: no link with 6 neighbours');}
+ NS('line',{x1:6,y1:TOP+NY*CS+44,x2:860,y2:TOP+NY*CS+44,stroke:'#333','stroke-width':3,'marker-end':'url(#ah2)'},gs);
+ const m2=NS('marker',{id:'ah2',markerWidth:7,markerHeight:7,refX:5,refY:3.5,orient:'auto'},defs);
+ NS('path',{d:'M0 0L7 3.5L0 7z',fill:'#333'},m2);
+ NS('text',{x:896,y:TOP+NY*CS+51,"text-anchor":"end",'font-size':17,fill:'#333'},gs,'time');
+ // table
+ const HD='<table><tr><th>Provisional label</th><th>Points to</th>'+(s.ph>=2?'<th>Final</th>':'')+'</tr>';let hi=-1;const rows=[];
+ for(let l=1;l<=s.K;l++){const cl=l===s.newL?'new':(s.chg.includes(l)?'chg':'');if(cl)hi=l;
+  rows.push('<tr class="'+cl+'" id="tr'+l+'"><td><b>'+l+'</b></td><td>'+(s.par[l]===l?'-':s.par[l])+'</td>'
+   +(s.ph>=2?'<td><b>'+LT(s.fin[l])+'</b></td>':'')+'</tr>');}
+ let h;
+ if(!s.K)h=HD+'<tr><td colspan="3" style="text-align:left">Equivalence table: empty until the scan creates labels.</td></tr></table>';
+ else if(s.K<=5)h=HD+rows.join('')+'</table>';
+ else{const half=Math.ceil(s.K/2);h='<div class="two">'+HD+rows.slice(0,half).join('')+'</table>'+HD+rows.slice(half).join('')+'</table></div>';}
+ $('tb').innerHTML=h;
+ if(hi>0){const e=$('tr'+hi);$('tb').scrollTop=Math.max(0,e.offsetTop-$('tb').clientHeight/2);}
+ $('kc').textContent=s.K;$('mc').textContent=s.ph>=2?s.M:'-';
+ $('msg').innerHTML=s.text;
+ const p=visPos();$('sl').value=p;$('slv').textContent=p+' / '+(vis.length-1);
+ $('prev').disabled=p===0;$('next').disabled=p===vis.length-1;$('fin').disabled=cur===steps.length-1;
+ $('e1').disabled=s.ph>=2;
+}
+/* ---- controls -------------------------------------------------------------------------------------- */
+$('c6').onclick=()=>setConn(6);$('c26').onclick=()=>setConn(26);
+$('prev').onclick=()=>{stop();go(visPos()-1);};$('next').onclick=()=>{stop();go(visPos()+1);};
+$('sl').oninput=e=>{stop();go(+e.target.value);};
+$('rst').onclick=()=>{stop();cur=0;draw();};
+$('fin').onclick=()=>{stop();cur=steps.length-1;draw();};
+$('e1').onclick=()=>{stop();let i=0;while(steps[i].ph<2)i++;i--;while(i>0&&skipBg&&steps[i].kind==='bg')i--;cur=i;draw();};
+$('rs').onclick=()=>{stop();cur=firstOf(2);draw();};
+$('p2').onclick=()=>{stop();cur=firstOf(3);draw();};
+$('sk').onchange=e=>{skipBg=e.target.checked;buildVis();cur=vis[visPos()];draw();};
+function tick(){if(visPos()>=vis.length-1){stop();return;}go(visPos()+1);if(visPos()>=vis.length-1)stop();}
+$('play').onclick=()=>{if(timer){stop();return;}if(visPos()>=vis.length-1){cur=0;}
+ $('play').innerHTML='&#10074;&#10074; Pause';timer=setInterval(tick,+$('sp').value);draw();};
+$('sp').onchange=()=>{if(timer){clearInterval(timer);timer=setInterval(tick,+$('sp').value);}};
+document.addEventListener('keydown',e=>{if(e.key!=='ArrowRight'&&e.key!=='ArrowLeft')return;
+ const t=e.target;if(t&&t.closest&&t.closest('select,input,textarea,[contenteditable]'))return;
+ stop();go(visPos()+(e.key==='ArrowRight'?1:-1));e.preventDefault();});
+setConn(6);
+new ResizeObserver(()=>draw()).observe(document.getElementById('gs'));
+</script></body></html>

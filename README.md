@@ -58,8 +58,9 @@ remohes-pucp-2026/
 │   └── LICENSE-marineHeatWaves.txt       # GPL-3.0-or-later
 ├── assets/                               # Esquemas (PNG) y afiche
 └── docs/
-    ├── TallerReMoHES_AP.pdf              # Diapositivas del taller (parte 1 de 4)
-    └── referencias.md                    # Artículos citados, con DOI
+    ├── remohes-pucp-2026-ap.pdf          # Diapositivas del seminario: A. Pietri (las demás, pendientes)
+    ├── remohes2026_deck/                 # Presentación web de D. Camarena (GitHub Pages)
+    └── referencias.md                    # Artículos citados, con DOI, y charlas del seminario
 ```
 
 ---
@@ -109,4 +110,4 @@ Desde Python: `descargar("2026-01-01", "2026-11-20", lat=(-18, -3), lon=(-85, -7
 
 ## 📚 Referencias
 
-Ver [docs/referencias.md](docs/referencias.md): Hobday et al. (2016, 2018), Hyndman y Fan (1996), Huang et al. (2021) y Bonino et al. (2023).
+Ver [docs/referencias.md](docs/referencias.md): Hobday et al. (2016, 2018), Hyndman y Fan (1996), Huang et al. (2021), Stefanon et al. (2012) y Bonino et al. (2023), además de las charlas del seminario científico.

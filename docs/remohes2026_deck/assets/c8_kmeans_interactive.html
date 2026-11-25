@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>C8 - k-means (interactive)</title><style>
+*{box-sizing:border-box}
+html,body{margin:0;background:#fff;color:#111;font-family:"Segoe UI",Arial,Helvetica,sans-serif}
+.app{display:flex;flex-direction:column;min-height:100vh;height:100vh;padding:8px 14px}
+header{display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px}
+h1{font-size:22px;margin:0}
+button,select{font:inherit;font-size:17px;padding:6px 12px;border:2px solid #333;border-radius:8px;
+ background:#fff;color:#111;cursor:pointer}
+button:hover:not(:disabled){background:#eef4fa}
+button:disabled{opacity:.35;cursor:default}
+button.on,button.on:hover:not(:disabled){background:#0072B2;color:#fff;border-color:#0072B2}
+button.hl{background:#E69F00;border-color:#8a5f00;font-weight:600}
+#msg{font-size:19px;min-height:54px;padding:6px 0;line-height:1.3}
+#msg b{color:#D55E00}
+main{flex:1;min-height:0;display:grid;gap:10px}
+svg{width:100%;height:100%;display:block;background:#fff;touch-action:none}
+svg text{font-family:inherit;font-size:var(--fs,16px)}
+.ctl{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;padding-top:8px;font-size:17px}
+.ctl label{display:flex;align-items:center;gap:8px}
+input[type=range]{width:min(34vw,320px);height:28px;accent-color:#0072B2}
+.hide{display:none!important}
+@media (max-width:820px){
+ .app{height:auto;min-height:100vh;padding:6px 8px}
+ h1{font-size:19px}
+ main{display:block}
+ main svg{height:auto;margin-bottom:8px}
+ button,select{font-size:16px;padding:6px 10px}
+ input[type=range]{width:44vw}
+}
+
+main{grid-template-columns:minmax(0,3fr) minmax(0,2fr)}
+.side{display:flex;flex-direction:column;gap:8px;min-height:0}
+.side svg{height:auto;flex:0 0 auto}
+#runs{font-size:17px;line-height:1.5}
+#runs div{border-bottom:1px solid #ddd}
+#runs .best{font-weight:700;color:#009E73}
+.note{font-size:17px;color:#333;border-left:5px solid #E69F00;padding-left:10px}
+</style></head><body><div class="app">
+<header><h1>k-means (Lloyd's algorithm) - k is chosen in advance</h1></header>
+<div id="msg"></div>
+<main><svg id="sp" viewBox="0 0 640 600" preserveAspectRatio="xMidYMid meet"></svg>
+<div class="side"><svg id="sc" viewBox="0 0 400 230" preserveAspectRatio="xMidYMid meet"></svg>
+<div id="runs"></div>
+<div class="note">Different random starts can converge to different solutions (local minima of the inertia).
+Unlike the hierarchical tree, k must be set before running.</div></div></main>
+<div class="ctl"><button id="bassign">Assign</button><button id="bupdate">Update centroids</button>
+<button id="bback">&larr; Back</button><button id="brun">Run to convergence</button>
+<button id="brst">Reset</button><button id="bnew">New random start</button>
+<label>k <input id="kk" type="range" min="2" max="6" value="4"><b id="kv">4</b></label>
+<label>Init <select id="ini"><option value="random">random</option><option value="kmeans++">k-means++</option></select></label>
+<span id="seedv"></span></div>
+</div>
+<script>
+const D={"P":[[-0.6193,-0.8653],[-0.7978,-0.5228],[-0.5155,-0.8039],[-0.0834,-1.2414],[-0.9509,-1.4445],[0.0211,-0.5741],[-0.3845,-0.9856],[-0.6752,-1.015],[-0.6744,-1.8844],[-0.5902,-0.8742],[-0.4878,-0.9081],[-0.5856,-1.0007],[0.0975,-0.9367],[-1.3002,-0.401],[-0.9538,-1.0234],[-1.0792,-1.417],[-0.2799,-0.8816],[-0.0198,-1.2665],[-0.4473,-0.8612],[-0.8174,-0.4026],[0.111,-1.5365],[-0.7988,-0.7869],[-0.0442,-0.7332],[-0.3561,-1.3214],[-1.3679,-1.2031],[-1.148,-1.3087],[-1.1378,-1.1152],[0.0848,-1.3847],[-0.6435,-1.284],[-0.0672,-1.0232],[-0.6367,-1.4739],[0.2476,-1.039],[1.5249,0.0342],[0.8919,-0.8811],[1.3804,-0.9252],[0.9595,-0.6869],[1.0769,-0.4952],[1.1192,-1.1561],[1.6281,-0.5333],[1.4045,-0.8752],[1.5551,-0.9613],[1.2755,0.0213],[0.9435,0.0588],[1.7711,-1.2616],[1.8402,-0.7449],[0.8321,-1.1183],[1.3307,-0.6388],[1.131,-0.9948],[1.1712,-0.5304],[0.8064,-0.7444],[1.1892,-0.4879],[1.2637,0.0493],[1.4882,0.5729],[1.479,-0.6003],[1.732,-0.7144],[1.3544,-1.4075],[1.7238,-0.9676],[0.7267,-0.3136],[1.3047,-0.9263],[2.1291,0.1457],[1.2155,0.2353],[1.038,-0.3907],[0.8784,1.0039],[-0.5291,1.1182],[0.4848,0.9608],[0.0759,1.1573],[0.3008,1.1104],[1.2918,0.9058],[0.2304,1.2509],[0.2179,1.5395],[0.4635,0.7798],[-0.5885,1.2417],[0.5563,1.211],[0.3267,1.7926],[0.7744,1.8504],[-0.5108,1.1488],[0.6315,1.875],[0.1695,1.2719],[-0.5839,0.8579],[-0.1499,1.5048],[0.2853,1.8139],[0.675,1.3156],[0.0918,1.1892],[0.3333,1.8944],[0.8715,0.5863],[-0.0188,1.547],[0.0055,1.4371],[0.8146,1.1697],[0.3535,1.1031],[0.3107,1.4918],[0.5336,1.3743],[0.4887,1.6583],[-0.6438,0.3707],[-1.2912,0.9794],[-1.2518,0.2919],[-1.1006,0.4664],[-1.0472,0.6262],[-1.1961,0.3714],[-1.251,0.4389],[-0.9552,0.5269],[-1.1175,0.6736],[-1.3401,0.3325],[-1.225,-0.0799],[-1.5445,0.9739],[-1.5975,0.6845],[-0.6954,-0.4172],[-1.6461,0.5043],[-1.7645,0.2626],[-1.2354,0.8081],[-1.6676,0.2754],[-1.3819,0.7687],[-0.9567,0.4902],[-1.2622,0.7131],[-1.1901,0.3424],[-0.6304,-0.271],[-0.9333,0.7827],[-1.0784,0.3052],[-1.1671,0.3758]],"palette":["#0072B2","#E69F00","#009E73","#D55E00","#56B4E9","#CC79A7","#F0E442"]};const P=D.P,n=P.length,PAL=D.palette,GREYC='#8c8c8c';
+
+function fit(svg,vbW,px){const r=svg.getBoundingClientRect(),vb=svg.viewBox.baseVal;
+ // 'meet' scales by the tighter of width and height, so text size must follow the same factor
+ const s=Math.min((r.width||vb.width)/vb.width,(r.height||vb.height)/vb.height)||1;
+ svg.style.setProperty('--fs',(px/s)+'px');}
+function NS(tag,attrs,parent,text){const e=document.createElementNS('http://www.w3.org/2000/svg',tag);
+ for(const k in attrs)e.setAttribute(k,attrs[k]);if(text!==undefined)e.textContent=text;
+ if(parent)parent.appendChild(e);return e;}
+function hull(pts){pts=pts.slice().sort((a,b)=>a[0]-b[0]||a[1]-b[1]);if(pts.length<3)return pts;
+ const cr=(o,a,b)=>(a[0]-o[0])*(b[1]-o[1])-(a[1]-o[1])*(b[0]-o[0]);const lo=[],up=[];
+ for(const p of pts){while(lo.length>1&&cr(lo[lo.length-2],lo[lo.length-1],p)<=0)lo.pop();lo.push(p);}
+ for(const p of pts.slice().reverse()){while(up.length>1&&cr(up[up.length-2],up[up.length-1],p)<=0)up.pop();up.push(p);}
+ lo.pop();up.pop();return lo.concat(up);}
+
+const sp=document.getElementById('sp'),sc=document.getElementById('sc'),msg=document.getElementById('msg');
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);
+ t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+let k=4,init='random',seedN=1,H=[],runs=[],timer=null;
+const d2=(a,b)=>(a[0]-b[0])**2+(a[1]-b[1])**2;
+function initialCentroids(){const rng=mulberry32(1000+seedN*7919);let c=[];
+ if(init==='random'){const idx=[...Array(n).keys()];for(let i=n-1;i>0;i--){const j=Math.floor(rng()*(i+1));[idx[i],idx[j]]=[idx[j],idx[i]];}
+  c=idx.slice(0,k).map(i=>P[i].slice());}
+ else{c=[P[Math.floor(rng()*n)].slice()];
+  while(c.length<k){const w=P.map(p=>Math.min(...c.map(q=>d2(p,q))));const tot=w.reduce((a,b)=>a+b,0);let r=rng()*tot,i=0;
+   for(;i<n-1;i++){r-=w[i];if(r<=0)break;}c.push(P[i].slice());}}
+ return c;}
+function restart(){stop();const c=initialCentroids();
+ H=[{cent:c,traj:c.map(q=>[q.slice()]),labels:null,phase:'assign',iter:0,sse:[],vor:null,converged:false,
+ text:'Initial centroids ('+init+', seed #'+seedN+'). Next: assign each point to the nearest centroid.'}];draw();}
+function cur(){return H[H.length-1];}
+function step(){const s=JSON.parse(JSON.stringify(cur()));
+ if(s.converged)return;
+ if(s.phase==='assign'){const lab=P.map(p=>{let b=0,bd=1e18;s.cent.forEach((c,j)=>{const d=d2(p,c);if(d<bd){bd=d;b=j;}});return b;});
+  const same=s.labels&&lab.every((v,i)=>v===s.labels[i]);s.labels=lab;s.vor=s.cent.map(q=>q.slice());
+  // inertia of THIS assignment, computed with the current (possibly just updated) centroids
+  s.sse.push(P.reduce((a,p,i)=>a+d2(p,s.cent[lab[i]]),0));
+  if(same){s.converged=true;s.text='<b>Converged</b> after '+s.iter+' iterations: no point changed cluster. Final inertia = '+s.sse[s.sse.length-1].toFixed(2)+'.';
+   registerRun(s);}
+  else{s.phase='update';
+   s.text='<b>Assign</b> each point to the nearest centroid (Voronoi regions). Inertia = '+s.sse[s.sse.length-1].toFixed(2)+'.';}}
+ else{s.cent=s.cent.map((c,j)=>{const m=P.filter((p,i)=>s.labels[i]===j);if(!m.length)return c;
+   return [m.reduce((a,p)=>a+p[0],0)/m.length,m.reduce((a,p)=>a+p[1],0)/m.length];});
+  s.vor=s.cent.map(q=>q.slice());  // regions of the CURRENT centroids; points keep the colour of their last assignment
+  s.traj.forEach((t,j)=>t.push(s.cent[j].slice()));s.iter++;s.phase='assign';
+  s.text='<b>Update:</b> move each centroid to the mean of its points. Iteration '+s.iter+' done. Next: assign again.';}
+ H.push(s);draw();}
+function registerRun(s){const key=k+'|'+init+'|'+seedN;if(runs.some(r=>r.key===key))return;
+ runs.push({key,k,init,seed:seedN,sse:s.sse[s.sse.length-1],it:s.iter});}
+function stop(){if(timer){clearInterval(timer);timer=null;document.getElementById('brun').textContent='Run to convergence';}}
+function runAll(){if(timer){stop();return;}if(cur().converged)return;document.getElementById('brun').textContent='Pause';
+ timer=setInterval(()=>{if(cur().converged){stop();return;}step();if(cur().converged)stop();},450);}
+function voronoi(c,j,box){let poly=box.slice();
+ for(let m=0;m<c.length;m++){if(m===j)continue;const a=c[m][0]-c[j][0],b=c[m][1]-c[j][1],r=(c[m][0]**2+c[m][1]**2-c[j][0]**2-c[j][1]**2)/2;
+  const out=[];for(let i=0;i<poly.length;i++){const p=poly[i],q=poly[(i+1)%poly.length],fp=a*p[0]+b*p[1]-r,fq=a*q[0]+b*q[1]-r;
+   if(fp<=0)out.push(p);if((fp<0&&fq>0)||(fp>0&&fq<0)){const t=fp/(fp-fq);out.push([p[0]+t*(q[0]-p[0]),p[1]+t*(q[1]-p[1])]);}}
+  poly=out;if(!poly.length)break;}return poly;}
+const xs=P.map(p=>p[0]),ys=P.map(p=>p[1]);
+const x0=Math.min(...xs)-.5,x1=Math.max(...xs)+.5,y0=Math.min(...ys)-.5,y1=Math.max(...ys)+.5;
+const SW=640,SH=600,sm=24,LM=64,BM=58,scl=Math.min((SW-LM-sm)/(x1-x0),(SH-BM-sm)/(y1-y0));
+const ox=LM+((SW-LM-sm)-(x1-x0)*scl)/2,oy=BM+((SH-BM-sm)-(y1-y0)*scl)/2;
+const px=v=>ox+(v-x0)*scl,py=v=>SH-oy-(v-y0)*scl;
+function draw(){const s=cur();sp.innerHTML='';sc.innerHTML='';fit(sp,SW,16);fit(sc,400,15);
+ const bw=(x1-x0)*scl,bh=(y1-y0)*scl;
+ NS('rect',{x:ox,y:SH-oy-bh,width:bw,height:bh,fill:'none',stroke:'#999','stroke-width':1.5},sp);
+ NS('text',{x:ox+bw/2,y:SH-12,'text-anchor':'middle',fill:'#444'},sp,'Standardized feature 1');
+ NS('text',{x:26,y:SH-oy-bh/2,'text-anchor':'middle',fill:'#444',transform:`rotate(-90 26 ${SH-oy-bh/2})`},sp,'Standardized feature 2');
+ const cp=NS('clipPath',{id:'cl'},sp);NS('rect',{x:ox,y:SH-oy-bh,width:bw,height:bh},cp);
+ if(s.vor){const box=[[x0,y0],[x1,y0],[x1,y1],[x0,y1]];s.vor.forEach((c,j)=>{const poly=voronoi(s.vor,j,box);if(poly.length<3)return;
+  NS('path',{d:'M'+poly.map(p=>px(p[0])+','+py(p[1])).join(' L')+' Z',fill:PAL[j],'fill-opacity':.13,stroke:PAL[j],'stroke-opacity':.5,'stroke-width':1.5,'clip-path':'url(#cl)'},sp);});}
+ P.forEach((p,i)=>NS('circle',{cx:px(p[0]),cy:py(p[1]),r:5.5,fill:s.labels?PAL[s.labels[i]]:'#bdbdbd',stroke:'#fff','stroke-width':1},sp));
+ s.traj.forEach((t,j)=>{if(t.length>1)NS('polyline',{points:t.map(q=>px(q[0])+','+py(q[1])).join(' '),fill:'none',stroke:PAL[j],'stroke-width':3,'stroke-dasharray':'6 4'},sp);
+  t.slice(0,-1).forEach(q=>NS('circle',{cx:px(q[0]),cy:py(q[1]),r:6,fill:'#fff',stroke:PAL[j],'stroke-width':3},sp));});
+ s.cent.forEach((c,j)=>{NS('circle',{cx:px(c[0]),cy:py(c[1]),r:14,fill:PAL[j],stroke:'#111','stroke-width':3.5},sp);
+  NS('text',{x:px(c[0]),y:py(c[1])+5,'text-anchor':'middle',fill:'#fff','font-weight':700,style:'paint-order:stroke;stroke:#111;stroke-width:3px'},sp,j+1);});
+ NS('text',{x:ox+bw-10,y:SH-oy-bh+24,'text-anchor':'end',fill:'#111','font-weight':700},sp,'Iteration '+s.iter);
+ // inertia mini chart
+ const W=400,Hh=230,l=58,r=14,t=14,b=44,m=s.sse.length?Math.max(...s.sse)*1.1:1;
+ NS('line',{x1:l,y1:t,x2:l,y2:Hh-b,stroke:'#333'},sc);NS('line',{x1:l,y1:Hh-b,x2:W-r,y2:Hh-b,stroke:'#333'},sc);
+ NS('text',{x:W/2,y:Hh-6,'text-anchor':'middle',fill:'#444'},sc,'Assignment step');
+ NS('text',{x:14,y:(t+Hh-b)/2,'text-anchor':'middle',fill:'#444',transform:`rotate(-90 14 ${(t+Hh-b)/2})`},sc,'Inertia (SSE)');
+ const nx=i=>l+16+i*(W-l-r-30)/Math.max(5,s.sse.length-1),ny=v=>Hh-b-v/m*(Hh-b-t);
+ NS('text',{x:l-6,y:t+10,'text-anchor':'end'},sc,s.sse.length?(m/1.1).toFixed(0):'');NS('text',{x:l-6,y:Hh-b+5,'text-anchor':'end'},sc,'0');
+ if(s.sse.length>1)NS('polyline',{points:s.sse.map((v,i)=>nx(i)+','+ny(v)).join(' '),fill:'none',stroke:'#0072B2','stroke-width':3},sc);
+ s.sse.forEach((v,i)=>{NS('circle',{cx:nx(i),cy:ny(v),r:5,fill:'#0072B2'},sc);NS('text',{x:nx(i),y:Hh-b+20,'text-anchor':'middle'},sc,i+1);});
+ msg.innerHTML=s.text;
+ document.getElementById('bassign').disabled=s.converged||s.phase!=='assign';document.getElementById('bupdate').disabled=s.converged||s.phase!=='update';
+ document.getElementById('bassign').className=(!s.converged&&s.phase==='assign')?'hl':'';document.getElementById('bupdate').className=(!s.converged&&s.phase==='update')?'hl':'';
+ document.getElementById('bback').disabled=H.length<2;document.getElementById('brun').disabled=s.converged;
+ document.getElementById('seedv').textContent='Seed #'+seedN;
+ const rr=runs.filter(x=>x.k===k),best=rr.length?Math.min(...rr.map(x=>x.sse)):0;
+ document.getElementById('runs').innerHTML=rr.length?'<b>Converged runs for k = '+k+'</b>'+rr.map(x=>'<div class="'+(x.sse===best?'best':'')+'">seed #'+x.seed+', '+x.init+': inertia '+x.sse.toFixed(2)+' ('+x.it+' it.)'+(x.sse===best?' - lowest':'')+'</div>').join(''):'<b>Converged runs for k = '+k+'</b><div>none yet - try several random starts</div>';}
+document.getElementById('bassign').onclick=()=>{stop();step();};document.getElementById('bupdate').onclick=()=>{stop();step();};
+document.getElementById('bback').onclick=()=>{stop();if(H.length>1){H.pop();draw();}};
+document.getElementById('brun').onclick=runAll;document.getElementById('brst').onclick=restart;
+document.getElementById('bnew').onclick=()=>{seedN++;restart();};
+document.getElementById('kk').oninput=e=>{k=+e.target.value;document.getElementById('kv').textContent=k;restart();};
+document.getElementById('ini').onchange=e=>{init=e.target.value;restart();};
+document.addEventListener('keydown',e=>{if(e.key==='ArrowRight'){stop();step();e.preventDefault();}
+ else if(e.key==='ArrowLeft'){stop();if(H.length>1){H.pop();draw();}e.preventDefault();}});
+// redraw when the SVG gets its real size (e.g. an iframe loaded on a hidden slide)
+new ResizeObserver(()=>draw()).observe(document.getElementById('sp'));
+restart();
+</script></body></html>

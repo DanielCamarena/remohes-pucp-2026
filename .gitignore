@@ -13,3 +13,6 @@ __pycache__/
 
 # Vista HTML local del cuaderno (scripts/compilar.py --html)
 *.html
+
+# Presentacion ReMoHES 2026 (GitHub Pages): sus HTML si se versionan
+!docs/remohes2026_deck/**/*.html

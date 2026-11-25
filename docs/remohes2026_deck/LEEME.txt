@@ -1,0 +1,12 @@
+Presentacion ReMoHES 2026 - Aprendizaje no supervisado para la clasificacion de olas de calor marinas
+
+Como abrirla
+- En una computadora: no abras index.html con doble clic (los interactivos no cargan). Abre una terminal en esta
+  carpeta y ejecuta:   python -m http.server 8000
+  luego entra en http://localhost:8000/ en el navegador.
+- En GitHub: copia esta carpeta dentro de docs/ del repositorio y activa GitHub Pages
+  (Settings > Pages > Deploy from a branch > main, carpeta /docs). Quedara en
+  https://<usuario>.github.io/<repositorio>/remohes2026_deck/
+- Las formulas se dibujan con MathJax desde internet: hace falta conexion.
+
+Teclas: flechas para avanzar, S notas del orador, F pantalla completa, E vista para imprimir (PDF desde el navegador).

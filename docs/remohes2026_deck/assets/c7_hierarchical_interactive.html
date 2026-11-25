@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>C7 - Hierarchical clustering (interactive)</title><style>
+*{box-sizing:border-box}
+html,body{margin:0;background:#fff;color:#111;font-family:"Segoe UI",Arial,Helvetica,sans-serif}
+.app{display:flex;flex-direction:column;min-height:100vh;height:100vh;padding:8px 14px}
+header{display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px}
+h1{font-size:22px;margin:0}
+button,select{font:inherit;font-size:17px;padding:6px 12px;border:2px solid #333;border-radius:8px;
+ background:#fff;color:#111;cursor:pointer}
+button:hover:not(:disabled){background:#eef4fa}
+button:disabled{opacity:.35;cursor:default}
+button.on,button.on:hover:not(:disabled){background:#0072B2;color:#fff;border-color:#0072B2}
+button.hl{background:#E69F00;border-color:#8a5f00;font-weight:600}
+#msg{font-size:19px;min-height:54px;padding:6px 0;line-height:1.3}
+#msg b{color:#D55E00}
+main{flex:1;min-height:0;display:grid;gap:10px}
+svg{width:100%;height:100%;display:block;background:#fff;touch-action:none}
+svg text{font-family:inherit;font-size:var(--fs,16px)}
+.ctl{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;padding-top:8px;font-size:17px}
+.ctl label{display:flex;align-items:center;gap:8px}
+input[type=range]{width:min(34vw,320px);height:28px;accent-color:#0072B2}
+.hide{display:none!important}
+@media (max-width:820px){
+ .app{height:auto;min-height:100vh;padding:6px 8px}
+ h1{font-size:19px}
+ main{display:block}
+ main svg{height:auto;margin-bottom:8px}
+ button,select{font-size:16px;padding:6px 10px}
+ input[type=range]{width:44vw}
+}
+
+main{grid-template-columns:minmax(0,5fr) minmax(0,6fr)}</style></head><body><div class="app">
+<header><h1>Hierarchical clustering - average linkage, Euclidean distance</h1>
+<div><button id="tb" class="on">1. Build the tree</button> <button id="tc">2. Cut the tree</button></div>
+<label style="font-size:17px;display:flex;align-items:center;gap:6px"><input type="checkbox" id="ids" style="width:20px;height:20px"> Show point ids</label></header>
+<div id="msg"></div>
+<main><svg id="sp" viewBox="0 0 600 560" preserveAspectRatio="xMidYMid meet"></svg>
+<svg id="sd" viewBox="0 0 660 560" preserveAspectRatio="xMidYMid meet"></svg></main>
+<div class="ctl" id="cb"><button id="prev">&larr; Previous</button><button id="play">&#9654; Play</button>
+<button id="next">Next &rarr;</button>
+<label>Merge step <input id="sl" type="range" min="0" value="0"><b id="slv">0</b></label>
+<button id="rst">Reset</button></div>
+<div class="ctl hide" id="cc"><label>Number of clusters k <input id="kl" type="range" min="1" value="3">
+<b id="klv">3</b></label><span id="knote">Drag the dashed line on the dendrogram, or use the slider.</span></div>
+</div>
+<script>
+const D={"P":[[-1.3806,-0.907],[-1.7466,-0.5641],[-0.9057,-1.0652],[-1.221,-0.8883],[-1.2063,-1.0455],[-0.8786,-0.8257],[-1.1388,-1.0038],[-1.0641,-1.1607],[1.0708,-0.2219],[1.1614,-0.7927],[1.0464,-0.1898],[1.1277,-0.4289],[1.4176,0.157],[0.9681,0.0155],[0.7967,-0.3328],[0.8167,0.0165],[0.1544,1.6354],[-0.416,1.5008],[-0.2944,1.1618],[0.0458,1.5579],[-0.0544,1.1112],[-0.3962,1.7264],[0.0748,1.5113],[0.1542,0.2585],[1.8682,-1.2259]],"Z":[[8,10,0.04032083828493647,2],[19,22,0.054886792582551205,2],[4,6,0.07934191830300041,2],[16,26,0.140426028614639,3],[3,27,0.14982500940313714,3],[13,15,0.15140330247388925,2],[2,7,0.1849616446726187,2],[0,29,0.21459166175773356,4],[17,21,0.22646721617046472,2],[11,25,0.23361098855509738,3],[18,20,0.24527608933607858,2],[14,34,0.3093671907554753,4],[31,32,0.31014455606496366,6],[30,36,0.36113007020328863,6],[5,37,0.3650795106079405,7],[28,33,0.515197591879493,5],[35,40,0.5294673734524478,7],[12,38,0.5924218234740302,7],[9,42,0.6911756630415214,8],[1,39,0.7692637039488163,8],[23,43,1.0470369880610297,9],[24,45,1.4221428920067039,10],[41,46,2.1213951695627307,17],[44,47,2.4956010227267638,25]],"order":[1,5,2,7,0,3,4,6,18,20,16,19,22,17,21,24,23,9,12,13,15,14,11,8,10],"palette":["#0072B2","#E69F00","#009E73","#D55E00","#56B4E9","#CC79A7","#F0E442"]};const P=D.P,Z=D.Z,order=D.order,n=P.length,PAL=D.palette,GREYC='#8c8c8c';
+
+function fit(svg,vbW,px){const r=svg.getBoundingClientRect(),vb=svg.viewBox.baseVal;
+ // 'meet' scales by the tighter of width and height, so text size must follow the same factor
+ const s=Math.min((r.width||vb.width)/vb.width,(r.height||vb.height)/vb.height)||1;
+ svg.style.setProperty('--fs',(px/s)+'px');}
+function NS(tag,attrs,parent,text){const e=document.createElementNS('http://www.w3.org/2000/svg',tag);
+ for(const k in attrs)e.setAttribute(k,attrs[k]);if(text!==undefined)e.textContent=text;
+ if(parent)parent.appendChild(e);return e;}
+function hull(pts){pts=pts.slice().sort((a,b)=>a[0]-b[0]||a[1]-b[1]);if(pts.length<3)return pts;
+ const cr=(o,a,b)=>(a[0]-o[0])*(b[1]-o[1])-(a[1]-o[1])*(b[0]-o[0]);const lo=[],up=[];
+ for(const p of pts){while(lo.length>1&&cr(lo[lo.length-2],lo[lo.length-1],p)<=0)lo.pop();lo.push(p);}
+ for(const p of pts.slice().reverse()){while(up.length>1&&cr(up[up.length-2],up[up.length-1],p)<=0)up.pop();up.push(p);}
+ lo.pop();up.pop();return lo.concat(up);}
+
+const sp=document.getElementById('sp'),sd=document.getElementById('sd'),msg=document.getElementById('msg');
+let mode='build',s=0,h=0,timer=null;
+const dist=Z.map(z=>z[2]),maxH=dist[n-2],ymax=maxH*1.12;
+// k values a horizontal cut can produce (tied merge heights are crossed together) and that have their own colour
+const KMAX=PAL.length,reach=[];for(let S=0;S<n;S++)if(S===0||S===n-1||dist[S-1]<dist[S])reach.push(n-S);
+reach.sort((a,b)=>a-b);const reachCut=reach.filter(v=>v<=KMAX),kTop=reachCut[reachCut.length-1];
+// node geometry: leaves follow scipy's leaf order, internal nodes sit above the mean of their children
+const nx=[],ny=[],mem=[];
+order.forEach((l,i)=>{nx[l]=i;});
+for(let i=0;i<n;i++){ny[i]=0;mem[i]=[i];}
+for(let i=0;i<n-1;i++){const a=Z[i][0],b=Z[i][1];nx[n+i]=(nx[a]+nx[b])/2;ny[n+i]=Z[i][2];mem[n+i]=mem[a].concat(mem[b]);}
+// scatter scale
+const xs=P.map(p=>p[0]),ys=P.map(p=>p[1]);
+const x0=Math.min(...xs)-.4,x1=Math.max(...xs)+.4,y0=Math.min(...ys)-.4,y1=Math.max(...ys)+.4;
+const SW=600,SH=560,sm=24,LM=64,BM=56,sc=Math.min((SW-LM-sm)/(x1-x0),(SH-BM-sm)/(y1-y0));
+const px=v=>LM+(v-x0)*sc+((SW-LM-sm)-(x1-x0)*sc)/2,py=v=>SH-BM-(v-y0)*sc-((SH-BM-sm)-(y1-y0)*sc)/2;
+// dendrogram scale
+const DW=660,DH=560,ml=70,mr=14,mt=16,mb=64;const NARROW=()=>sd.getBoundingClientRect().width<500;
+const dx=i=>ml+(i+.5)*(DW-ml-mr)/n,dy=v=>DH-mb-v/ymax*(DH-mb-mt),hFromY=y=>(DH-mb-y)/(DH-mb-mt)*ymax;
+function fmtSet(a){const t=a.slice().sort((u,v)=>u-v).map(i=>i+1);return '{'+(t.length>6?t.slice(0,6).join(', ')+', ... ('+t.length+' pts)':t.join(', '))+'}';}
+function stepsForH(hh){let c=0;while(c<n-1&&dist[c]<=hh)c++;return c;}
+function state(){ // groups after S merges
+ const S=mode==='build'?s:stepsForH(h),top=[];for(let i=0;i<n;i++)top[i]=i;
+ for(let i=0;i<S;i++)for(const m of mem[n+i])top[m]=n+i;
+ const groups={};for(let i=0;i<n;i++)(groups[top[i]]=groups[top[i]]||[]).push(i);
+ const col={};
+ if(mode==='build'){for(const g in groups)col[g]=groups[g].length>1?PAL[(g-n)%PAL.length]:GREYC;}
+ else{Object.keys(groups).sort((a,b)=>groups[b].length-groups[a].length||a-b).forEach((g,r)=>{col[g]=r<PAL.length?PAL[r]:GREYC;});}
+ return {S,top,groups,col};}
+function draw(){
+ const st=state(),S=st.S;sp.innerHTML='';sd.innerHTML='';fit(sp,SW,16);fit(sd,DW,16);
+ // ---- scatter
+ NS('rect',{x:LM-14,y:sm/2,width:SW-LM-sm/2+14,height:SH-BM-sm/2+10,fill:'none',stroke:'#999','stroke-width':1.5},sp);
+ NS('text',{x:(LM+SW-sm)/2,y:SH-10,'text-anchor':'middle',fill:'#444'},sp,'Standardized feature 1');
+ NS('text',{x:26,y:(sm+SH-BM)/2,'text-anchor':'middle',fill:'#444',transform:`rotate(-90 26 ${(sm+SH-BM)/2})`},sp,'Standardized feature 2');
+ const newMerge=(mode==='build'&&S>0)?S-1:-1;
+ for(const g in st.groups){const idx=st.groups[g];if(idx.length<2)continue;
+  const pts=idx.map(i=>[px(P[i][0]),py(P[i][1])]),isNew=(+g===n+newMerge);
+  const hp=hull(pts);const d=hp.length==2?`M${hp[0]} L${hp[1]}`:'M'+hp.map(p=>p.join(',')).join(' L')+' Z';
+  NS('path',{d,fill:st.col[g],stroke:st.col[g],'stroke-width':24,'stroke-linejoin':'round','stroke-linecap':'round',
+   opacity:isNew?.4:.18,'fill-opacity':1},sp);
+  if(isNew){NS('path',{d,fill:'none',stroke:'#D55E00','stroke-width':6,'stroke-linejoin':'round'},sp);}}
+ if(newMerge>=0){const a=Z[newMerge][0],b=Z[newMerge][1],cen=m=>[0,1].map(c=>mem[m].reduce((u,i)=>u+P[i][c],0)/mem[m].length);
+  const ca=cen(a),cb=cen(b);NS('line',{x1:px(ca[0]),y1:py(ca[1]),x2:px(cb[0]),y2:py(cb[1]),stroke:'#D55E00','stroke-width':3,'stroke-dasharray':'3 5'},sp);}
+ P.forEach((p,i)=>{const c=st.col[st.top[i]],isNew=newMerge>=0&&mem[n+newMerge].includes(i);
+  NS('circle',{cx:px(p[0]),cy:py(p[1]),r:isNew?9:7.5,fill:c===GREYC?'#bdbdbd':c,stroke:isNew?'#D55E00':'#fff','stroke-width':isNew?4.5:1.5},sp);});
+ // point ids: only the merged pair in build mode, none in cut mode, all if the switch is on
+ const showAll=document.getElementById('ids').checked,fsu=parseFloat(sp.style.getPropertyValue('--fs'))*.875;
+ const want=showAll?P.map((_,i)=>i):(newMerge>=0?mem[n+newMerge].slice():[]),boxes=P.map(p=>[px(p[0])-9,py(p[1])-9,px(p[0])+9,py(p[1])+9]);
+ const hit=(a,b)=>a[0]<b[2]&&a[2]>b[0]&&a[1]<b[3]&&a[3]>b[1];
+ want.forEach(i=>{const txt=String(i+1),w=txt.length*.6*fsu+2,hh=fsu,x=px(P[i][0]),y=py(P[i][1]),r=12;
+  const cand=[[x+r,y-r+hh*.5,'start'],[x-r,y-r+hh*.5,'end'],[x+r,y+r+hh*.6,'start'],[x-r,y+r+hh*.6,'end']];let pick=cand[0];
+  const bx=c=>{const x1=c[2]==='start'?c[0]:c[0]-w;return [x1,c[1]-hh,x1+w,c[1]+3];};
+  for(const c of cand){const b=bx(c);if(!boxes.some((o,j)=>hit(b,o)&&!(j===i))){pick=c;break;}}
+  boxes.push(bx(pick));
+  NS('text',{x:pick[0],y:pick[1],'text-anchor':pick[2],fill:'#111',style:'font-size:'+fsu+'px;paint-order:stroke;stroke:#fff;stroke-width:4px;stroke-linejoin:round'},sp,txt);});
+ // ---- dendrogram
+ const ay=NS('g',{},sd);NS('line',{x1:ml,y1:dy(0),x2:ml,y2:dy(ymax),stroke:'#333','stroke-width':1.5},ay);
+ const step=maxH>6?2:1;for(let t=0;t<=ymax;t+=step){NS('line',{x1:ml-6,y1:dy(t),x2:ml,y2:dy(t),stroke:'#333'},ay);
+  NS('text',{x:ml-9,y:dy(t)+5,'text-anchor':'end'},ay,t);}
+ NS('text',{x:20,y:DH/2-20,'text-anchor':'middle',transform:`rotate(-90 20 ${DH/2-20})`,fill:'#444'},sd,'Merge distance');
+ order.forEach((l,i)=>{const nar=NARROW(),y=DH-mb+16;NS('text',{x:dx(i),y:nar?y+6:y+4,'text-anchor':nar?'end':'middle',transform:nar?`rotate(-90 ${dx(i)+5} ${y+6})`:'',style:'font-size:calc(var(--fs)*.82)',fill:'#333'},sd,l+1);});
+ if(!NARROW())NS('text',{x:ml+(DW-ml)/2,y:DH-3,'text-anchor':'middle',fill:'#444',style:'font-size:calc(var(--fs)*.85)'},sd,'Point id');
+ const seg=(x1,y1,x2,y2,c,w,op)=>NS('line',{x1,y1,x2,y2,stroke:c,'stroke-width':w,'stroke-linecap':'round',opacity:op||1},sd);
+ const clusterCol=node=>st.col[st.top[mem[node][0]]];
+ for(let i=0;i<n-1;i++){const p=n+i,kids=[Z[i][0],Z[i][1]];
+  if(mode==='build'){
+   const shown=i<S,latest=i===S-1;const c=latest?'#D55E00':(shown?'#222':'#e4e4e4'),w=latest?5:(shown?2.8:1.6);
+   kids.forEach(k=>seg(dx(nx[k]),dy(ny[k]),dx(nx[k]),dy(ny[p]),c,w));
+   seg(dx(nx[kids[0]]),dy(ny[p]),dx(nx[kids[1]]),dy(ny[p]),c,w);
+   if(latest){const L=dx(nx[p])>DW-130;NS('text',{x:dx(nx[p])+(L?-12:12),y:dy(ny[p])-8,'text-anchor':L?'end':'start',fill:'#D55E00','font-weight':700},sd,'d = '+ny[p].toFixed(2));}
+  }else{
+   const below=ny[p]<=h;
+   kids.forEach(k=>{const lo=ny[k],hi=ny[p],X=dx(nx[k]);
+    if(lo<=h){seg(X,dy(lo),X,dy(Math.min(hi,h)),clusterCol(k),4);}
+    if(hi>h)seg(X,dy(Math.max(lo,h)),X,dy(hi),GREYC,2.5);});
+   seg(dx(nx[kids[0]]),dy(ny[p]),dx(nx[kids[1]]),dy(ny[p]),below?clusterCol(p):GREYC,below?4:2.5);}}
+ if(mode==='cut'){const Y=dy(h);NS('line',{x1:ml,y1:Y,x2:DW-mr,y2:Y,stroke:'#111','stroke-width':3,'stroke-dasharray':'10 6'},sd);
+  NS('rect',{x:DW-mr-22,y:Y-14,width:22,height:28,rx:6,fill:'#111'},sd);
+  NS('text',{x:DW-mr-30,y:Y-8,'text-anchor':'end',fill:'#111','font-weight':700},sd,'h = '+h.toFixed(2));}
+ // ---- message + controls
+ const k=n-S;
+ if(mode==='build'){
+  if(S===0)msg.innerHTML='<b>Step 0:</b> every point is its own cluster ('+n+' clusters).';
+  else{const z=Z[S-1];msg.innerHTML='<b>Step '+S+':</b> merge '+fmtSet(mem[z[0]])+' + '+fmtSet(mem[z[1]])+' at distance d = <b>'+z[2].toFixed(2)+'</b> (average of all pairwise distances) &rarr; '+k+' cluster'+(k>1?'s':'')+' now.';}
+  document.getElementById('sl').value=S;document.getElementById('slv').textContent=S+' / '+(n-1);
+  document.getElementById('prev').disabled=S===0;document.getElementById('next').disabled=S===n-1;
+ }else{msg.innerHTML='Cut at h = <b>'+h.toFixed(2)+'</b> &rarr; k = <b>'+k+'</b> cluster'+(k>1?'s':'')+'. Branches below the line take the cluster colour; above it they stay grey.';
+  document.getElementById('kl').value=Math.max(0,reachCut.indexOf(k));document.getElementById('klv').textContent=k;}
+}
+function setMode(m){stop();mode=m;document.getElementById('tb').className=m==='build'?'on':'';
+ document.getElementById('tc').className=m==='cut'?'on':'';
+ document.getElementById('cb').classList.toggle('hide',m!=='build');document.getElementById('cc').classList.toggle('hide',m!=='cut');draw();}
+function setK(k){k=reachCut.reduce((b,v)=>Math.abs(v-k)<Math.abs(b-k)?v:b,reachCut[0]);const S=n-k;
+ h=S===n-1?maxH*1.04:(S===0?dist[0]/2:(dist[S-1]+dist[S])/2);}
+function stop(){if(timer){clearInterval(timer);timer=null;document.getElementById('play').innerHTML='&#9654; Play';}}
+function go(v){s=Math.max(0,Math.min(n-1,v));draw();}
+document.getElementById('ids').onchange=draw;document.getElementById('tb').onclick=()=>setMode('build');document.getElementById('tc').onclick=()=>setMode('cut');
+document.getElementById('prev').onclick=()=>{stop();go(s-1);};document.getElementById('next').onclick=()=>{stop();go(s+1);};
+document.getElementById('rst').onclick=()=>{stop();go(0);};
+document.getElementById('sl').max=n-1;document.getElementById('sl').oninput=e=>{stop();go(+e.target.value);};
+document.getElementById('kl').max=reachCut.length-1;document.getElementById('kl').oninput=e=>{setK(reachCut[+e.target.value]);draw();};
+document.getElementById('play').onclick=()=>{if(timer){stop();return;}if(s>=n-1)s=0;
+ document.getElementById('play').innerHTML='&#10074;&#10074; Pause';draw();
+ timer=setInterval(()=>{if(s>=n-1){stop();return;}go(s+1);if(s>=n-1)stop();},900);};
+let drag=false;
+function dragTo(e){const r=sd.getScreenCTM().inverse(),pt=sd.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;
+ const q=pt.matrixTransform(r);h=Math.max(.001,Math.min(ymax*.99,hFromY(q.y)));if(n-stepsForH(h)>kTop)setK(kTop);draw();}
+sd.addEventListener('pointerdown',e=>{if(mode!=='cut')return;drag=true;sd.setPointerCapture(e.pointerId);dragTo(e);});
+sd.addEventListener('pointermove',e=>{if(drag)dragTo(e);});
+sd.addEventListener('pointerup',()=>{drag=false;});
+document.addEventListener('keydown',e=>{if(e.key!=='ArrowRight'&&e.key!=='ArrowLeft')return;const d=e.key==='ArrowRight'?1:-1;
+ if(mode==='build'){stop();go(s+d);}else{const i=reachCut.indexOf(n-stepsForH(h));
+  setK(reachCut[Math.max(0,Math.min(reachCut.length-1,(i<0?0:i)-d))]);draw();}e.preventDefault();});
+// redraw when the SVG gets its real size (e.g. an iframe loaded on a hidden slide)
+new ResizeObserver(()=>draw()).observe(document.getElementById('sp'));
+document.getElementById('knote').textContent+=' k is limited to '+KMAX+' (one colour per cluster; grey is only for branches above the cut)'
+ +(reach.length<n?' and to values a horizontal cut can reach (tied merge heights are crossed together).':'.');
+setK(3);s=Math.floor((n-1)/2);draw();
+</script></body></html>
