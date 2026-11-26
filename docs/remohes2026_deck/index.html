@@ -177,8 +177,8 @@ Francois Colas
 </video>
 </div><div class="column" style="width:25%;">
 <ul>
-<li>El calor anómalo aparece, crece, se desplaza y se fragmenta</li>
-<li>El Niño 2023-2024: el último que recordamos</li>
+<li>El calentamiento aparece, crece, se desplaza y se fragmenta</li>
+<li>El Niño 2023-2024: el último gran calentamiento</li>
 <li>¿Qué píxeles forman la misma ola de calor?</li>
 </ul>
 </div></div>
@@ -199,8 +199,8 @@ Francois Colas
           display:block!important;
       }</style></aside>
 </section>
-<section id="detección-de-ocm" class="slide level2">
-<h2>Detección de OCM</h2>
+<section id="detección-de-ocm-hobday-et-al.-2016" class="slide level2">
+<h2>Detección de OCM (Hobday et al., 2016)</h2>
 <!-- [2] -->
 <img data-src="assets/i1b_mhw_definition.png" class="r-stretch" alt="Serie diaria sintética en Ilo con climatología, umbral P90, una ola de calor marina con su duración, intensidad máxima e intensidad acumulada, y un pico corto que no llega a 5 días">
 <div class="caption">
@@ -511,15 +511,15 @@ Francois Colas
 <section id="cómo-elegir-k" class="slide level2">
 <h2>Cómo elegir k</h2>
 <!-- [15] -->
-<p><img data-src="assets/c6_choose_k.png" alt="Inercia, silhouette media y estabilidad ARI entre submuestras frente a k, para los mismos puntos del interactivo" height="400"></p>
+<p><img data-src="assets/c6_choose_k.png" alt="Inercia y silhouette media frente a k, y silhouette de cada punto con k = 4, para los mismos puntos del interactivo" height="400"></p>
 <div class="columns formula">
 <div class="column" style="width:50%;">
-<p><strong>Silhouette</strong> de un evento <span class="math inline">\(i\)</span>: <span class="math display">\[s(i) = \frac{b(i) - a(i)}{\max\{a(i),\, b(i)\}} \in [-1, 1]\]</span> <span class="math inline">\(a(i)\)</span>: distancia media a los <strong>otros</strong> eventos de su grupo; <span class="math inline">\(b(i) = \min_{C \neq C(i)}\)</span> distancia media de <span class="math inline">\(i\)</span> a los eventos de <span class="math inline">\(C\)</span>. Se promedia sobre todos los eventos (<span class="math inline">\(s = 0\)</span> si el grupo tiene un solo evento).</p>
+<p><strong>Silhouette</strong> de un evento <span class="math inline">\(i\)</span>: <span class="math display">\[s(i) = \frac{b(i) - a(i)}{\max\{a(i),\, b(i)\}} \in [-1, 1]\]</span> <span class="math inline">\(a(i)\)</span>: distancia media a los <strong>otros</strong> eventos de su grupo; <span class="math inline">\(b(i) = \min_{C \neq C(i)}\)</span> distancia media de <span class="math inline">\(i\)</span> a los eventos de <span class="math inline">\(C\)</span> (<span class="math inline">\(s = 0\)</span> si el grupo tiene un solo evento).</p>
 </div><div class="column" style="width:50%;">
-<p><strong>Estabilidad (ARI)</strong>: dos submuestras del 80 % se agrupan con el mismo <span class="math inline">\(k\)</span> y sus particiones se comparan en los eventos que comparten: <span class="math display">\[\mathrm{ARI} = \frac{\mathrm{RI} - \mathbb{E}[\mathrm{RI}]}{\max \mathrm{RI} - \mathbb{E}[\mathrm{RI}]}\]</span> 1 = misma partición; ≈ 0 = coincidencia al azar. Cada corte se juzga con silhouette, ARI y tamaño de los grupos; los cortes se eligen a mano.</p>
+<p><strong>Cómo se lee</strong> cada barra: <span class="math inline">\(s \approx 1\)</span>, bien dentro de su grupo; <span class="math inline">\(s \approx 0\)</span>, en la frontera; <span class="math inline">\(s &lt; 0\)</span>, más cerca de otro grupo. La media resume, pero la distribución muestra qué grupos son compactos y qué eventos quedan en el borde. Cada corte se juzga con silhouette, estabilidad (respaldo) y tamaño de los grupos.</p>
 </div></div>
 <aside class="notes">
-<p>Los mismos puntos del interactivo de k-means (20 arranques por k): el codo de W y la silhouette coinciden en k = 4. La W óptima no aumenta al añadir grupos, por eso se busca el codo y no el mínimo. En los datos reales ningún índice decide solo: el ARI (índice de Rand ajustado) mide cuánto se repite la partición al submuestrear; RI es la fracción de pares de eventos en los que las dos particiones coinciden (juntos o separados), y el ARI descuenta lo esperable al azar. Un grupo muy pequeño no se interpreta.</p>
+<p>Los mismos puntos del interactivo de k-means (20 arranques por k): el codo de W y la silhouette media coinciden en k = 4. A la derecha, la silhouette de cada punto con k = 4: los cuatro grupos tienen barras parecidas y solo 1 de 118 puntos queda por debajo de 0. La estabilidad ante submuestreo (ARI) está en el respaldo. La W óptima no aumenta al añadir grupos, por eso se busca el codo y no el mínimo. En los datos reales ningún índice decide solo: el ARI (índice de Rand ajustado) mide cuánto se repite la partición al submuestrear; RI es la fracción de pares de eventos en los que las dos particiones coinciden (juntos o separados), y el ARI descuenta lo esperable al azar. Un grupo muy pequeño no se interpreta.</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
           position:absolute!important;
@@ -532,20 +532,20 @@ Francois Colas
           display:block!important;
       }</style></aside>
 </section>
-<section id="distancias-con-rasgos-tensoriales" class="slide level2">
-<h2>Distancias con rasgos tensoriales</h2>
+<section id="distancias-con-rasgos-tensoriales-stefanon-et-al.-2012" class="slide level2">
+<h2>Distancias con rasgos tensoriales (Stefanon et al., 2012)</h2>
 <!-- [16] -->
 <div class="columns">
 <div class="column" style="width:70%;">
 <p><img data-src="assets/results_deck/tensor_pair.png" alt="Mapas de intensidad media de las olas de calor MHW 1997-1998 y MHW 2021-2024, sus 6 rasgos escalares, y la distancia del par entre todos los pares según escalares y según mapas"></p>
 </div><div class="column formula" style="width:30%;">
-<p><strong>Escalares</strong> (<span class="math inline">\(p = 6\)</span> rasgos escalados): <span class="math display">\[d_E(A,B) = \frac{\lVert \mathbf{x}_A - \mathbf{x}_B \rVert}{\sqrt{p}}\]</span> <strong>Mapas</strong>: <span class="math inline">\(\bar{I}(x)\)</span> = en cada celda, media sobre los días del evento de la intensidad de su evento local. <span class="math inline">\(\mathbf{u}_A\)</span> = ese mapa suavizado (<span class="math inline">\(\sigma = 50\)</span> km), como vector de celdas oceánicas con <span class="math inline">\(\lVert \mathbf{u}_A \rVert = 1\)</span>: <span class="math display">\[d_{\cos}(A,B) = 1 - \mathbf{u}_A \cdot \mathbf{u}_B\]</span></p>
+<p><strong>Escalares</strong> (<span class="math inline">\(p = 6\)</span> rasgos escalados): <span class="math display">\[d_E(A,B) = \frac{\lVert \mathbf{x}_A - \mathbf{x}_B \rVert}{\sqrt{p}}\]</span> <strong>Mapas</strong>, con <span class="math inline">\(T_x\)</span> = días en que la celda <span class="math inline">\(x\)</span> está dentro del evento: <span class="math display">\[D(x) = |T_x|, \qquad \bar{I}(x) = \frac{1}{D(x)} \sum_{t \in T_x} I(x,t)\]</span> (<span class="math inline">\(0\)</span> si la celda no está en el evento). <span class="math inline">\(\mathbf{u}_A\)</span> = el mapa suavizado (<span class="math inline">\(\sigma = 50\)</span> km), como vector de celdas oceánicas con <span class="math inline">\(\lVert \mathbf{u}_A \rVert = 1\)</span>: <span class="math display">\[d_{\cos}(A,B) = 1 - \mathbf{u}_A \cdot \mathbf{u}_B\]</span></p>
 </div></div>
 <div class="caption">
 <p>Detector standard, conectividad 6: los 134 eventos del 10 % superior por área máxima entre los que tocan la franja de 200 km. Cada distancia se divide por la mediana de las distancias positivas.</p>
 </div>
 <aside class="notes">
-<p>Por sus 6 números estas dos olas de calor (MHW 1997-1998 y MHW 2021-2024; nombres por los años que abarcan, son pseudoetiquetas) son un par corriente (el 29 % de los pares está más cerca); por su mapa son el par más parecido de la cohorte (ningún par está más cerca). El coseno compara la forma del mapa, no su nivel: no cambia si un mapa se multiplica por una constante positiva. Celdas oceánicas sin el evento valen 0 antes de suavizar. Nuestra clasificación usa enlace promedio sobre la matriz de disimilitud coseno; k-means sobre los vectores de mapas o Ward con distancia euclidiana serían posibles, pero son otros procedimientos. La MHW 2021-2024 empieza antes de El Niño 2023-2024 y abarca su ventana; llega al final del registro.</p>
+<p>Por sus 6 números estas dos olas de calor (MHW 1997-1998 y MHW 2021-2024; nombres por los años que abarcan, son pseudoetiquetas) son un par corriente (el 29 % de los pares está más cerca); por su mapa son uno de los pares más parecidos de la cohorte (solo 3 de los 8 911 pares están más cerca). El coseno compara la forma del mapa, no su nivel: no cambia si un mapa se multiplica por una constante positiva. Celdas oceánicas sin el evento valen 0 antes de suavizar. Nuestra clasificación usa enlace promedio sobre la matriz de disimilitud coseno; k-means sobre los vectores de mapas o Ward con distancia euclidiana serían posibles, pero son otros procedimientos. La MHW 2021-2024 empieza antes de El Niño 2023-2024 y abarca su ventana; llega al final del registro.</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
           position:absolute!important;
@@ -580,19 +580,10 @@ Francois Colas
 <section id="criterios-de-enlace" class="slide level2">
 <h2>Criterios de enlace</h2>
 <!-- [18] -->
-
-<img data-src="assets/c4_linkage_criteria.png" style="width:100.0%" alt="Cuatro dendrogramas y particiones con k=3: single, average, complete, Ward" class="r-stretch"><div class="columns formula">
-<div class="column" style="width:25%;">
-<p><strong>Simple</strong> <span class="math display">\[d(A,B) = \min_{a \in A,\, b \in B} d(a,b)\]</span></p>
-</div><div class="column" style="width:25%;">
-<p><strong>Promedio</strong> (MHW) <span class="math display">\[d(A,B) = \frac{1}{|A|\,|B|} \sum_{a \in A} \sum_{b \in B} d(a,b)\]</span></p>
-</div><div class="column" style="width:25%;">
-<p><strong>Completo</strong> <span class="math display">\[d(A,B) = \max_{a \in A,\, b \in B} d(a,b)\]</span></p>
-</div><div class="column" style="width:25%;">
-<p><strong>Ward</strong> <span class="math display">\[\Delta(A,B) = \frac{|A|\,|B|}{|A|+|B|} \lVert \boldsymbol{\mu}_A - \boldsymbol{\mu}_B \rVert^2\]</span></p>
-</div></div>
+<p><img data-src="assets/c4b_linkage_distance.png" alt="Dos grupos de puntos, A y B, y cómo mide su distancia cada criterio: par más cercano, par más lejano, media de los 12 pares y aumento de la inercia de Ward" height="330"></p>
+<p><img data-src="assets/c4_linkage_criteria.png" alt="Cuatro dendrogramas y particiones con k=3: single, complete, average, Ward" height="380"></p>
 <aside class="notes">
-<p>Simple encadena por puentes; completo da grupos compactos; Ward mide el aumento de la inercia al unir y supone distancias euclidianas entre vectores; promedio usa la distancia media entre pares y se puede aplicar a cualquier matriz de disimilitud, también a la coseno (que no es euclidiana y puede no cumplir la desigualdad triangular): por eso MHW4 lo usa con mapas.</p>
+<p>Arriba, cómo se calcula la distancia entre dos grupos A y B: simple, el par más cercano; completo, el más lejano; promedio, la media de todos los pares; Ward, cuánto crece la suma de cuadrados al unir (su valor está en otra escala). Abajo, el resultado de cada criterio con k = 3. Simple encadena por puentes; completo da grupos compactos; Ward mide el aumento de la inercia al unir y supone distancias euclidianas entre vectores; promedio usa la distancia media entre pares y se puede aplicar a cualquier matriz de disimilitud, también a la coseno (que no es euclidiana y puede no cumplir la desigualdad triangular): por eso MHW4 lo usa con mapas.</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
           position:absolute!important;
@@ -615,7 +606,7 @@ Francois Colas
 <!-- [R1] -->
 <img data-src="assets/results_deck/domains.png" class="r-stretch" alt="Mapa de los dominios: Pacífico, franja costera de 200 km (principal), franja de 300 km y caja Perú, con su número de celdas">
 <div class="caption">
-<p>Dominio principal: franja costera de 200 km (distancia a la costa continental entre 25°S y 5°N; 1 156 celdas). Un evento entra en un dominio si toca alguna de sus celdas. Todos los resultados: detector standard (Hobday), conectividad 6.</p>
+<p>Dominio principal: franja costera de 200 km (distancia a la costa continental entre 25°S y 5°N; 1 156 celdas). Un evento entra en un dominio si toca alguna de sus celdas. Como referencia, las regiones de los índices: Niño 1+2 (ICEN) y Niño 3 (ONI, que usa Niño 3.4; Niño 3 es la región de respuesta del Pacífico oriental). Todos los resultados: detector standard (Hobday), conectividad 6.</p>
 </div>
 <aside class="notes">
 <p>Todo lo que sigue es para la franja de 200 km. El Pacífico da contexto; la franja de 300 km y la caja Perú son sensibilidad. El Atlántico se detecta pero queda fuera.</p>
@@ -714,36 +705,15 @@ Francois Colas
           display:block!important;
       }</style></aside>
 </section>
-<section id="la-actividad-costera-sigue-al-icen" class="slide level2">
-<h2>La actividad costera sigue al ICEN</h2>
-<!-- [R4] → conclusión 3 -->
-<img data-src="assets/results_deck/activity_vs_oni_icen.png" class="r-stretch" alt="Porcentaje mensual del Pacífico y de la franja bajo ola de calor frente a ONI e ICEN, con la correlación según el desfase">
-<div class="caption">
-<p>1982-2024: a desfase cero, el porcentaje mensual de la franja bajo ola de calor correlaciona r = 0,84 con el ICEN; el del Pacífico, r = 0,52 con el ONI.</p>
-</div>
-<aside class="notes">
-<p>El ICEN mide El Niño costero (Niño 1+2); el ONI, el del Pacífico central. La franja responde al costero. Banda: intervalo del 95 % por remuestreo de bloques de 12 meses. Es coherencia con un índice de TSM, no una prueba causal.</p>
-<style type="text/css">
-        span.MJX_Assistive_MathML {
-          position:absolute!important;
-          clip: rect(1px, 1px, 1px, 1px);
-          padding: 1px 0 0 0!important;
-          border: 0!important;
-          height: 1px!important;
-          width: 1px!important;
-          overflow: hidden!important;
-          display:block!important;
-      }</style></aside>
-</section>
-<section id="unos-pocos-eventos-dominan-por-eso-separamos-el-10-mayor" class="slide level2">
-<h2>Unos pocos eventos dominan: por eso separamos el 10 % mayor</h2>
+<section id="unos-pocos-eventos-dominan-separamos-el-10-mayor" class="slide level2">
+<h2>Unos pocos eventos dominan: separamos el 10 % mayor</h2>
 <!-- [R6] -->
 <img data-src="assets/results_deck/concentration.png" class="r-stretch" alt="Fracción acumulada de celdas-día del Pacífico y de la franja según el rango de los eventos">
 <div class="caption">
-<p>Cómo leerla: los eventos se ordenan de mayor a menor por sus celdas-día dentro del dominio (eje x, escala log) y la curva suma su aporte. En la franja, 3 de 1 334 eventos superan la mitad de las celdas-día; se agrupan aparte los 134 eventos con mayor área máxima (10 %).</p>
+<p>Cómo leerla: los eventos se ordenan de mayor a menor por sus celdas-día dentro del dominio (eje x, escala log) y la curva suma su aporte. En la franja, 3 de 1 334 eventos superan la mitad de las celdas-día; se agrupan aparte los 134 eventos con mayor área máxima (10 %). La cohorte son los 134 eventos con <span class="math inline">\(A_{max} \ge 125\)</span> celdas (≈ 94 000 km²: celdas de 0,25°, unos 750 km² cada una en la latitud de la franja).</p>
 </div>
 <aside class="notes">
-<p>Celda-día: una celda del dominio en un día dentro de un evento. La curva parte del evento más grande: en la franja aporta el 22 %; con el segundo, el 41 %; con el tercero, el 57 %. El punto negro marca cuántos eventos hacen falta para llegar al 50 % (línea punteada): 3 en la franja y 4 en el Pacífico. La línea azul discontinua marca el 10 % mayor: más allá, los eventos restantes suman poco cada uno. Es una decisión de método, no una prueba: con una actividad tan concentrada, mezclar eventos gigantes y pequeños haría que el tamaño dominara la distancia. El 10 % se toma por área máxima global, no por celdas-día, de modo que el corte en la curva es aproximado.</p>
+<p>Celda-día: una celda del dominio en un día dentro de un evento. La curva parte del evento más grande: en la franja aporta el 22 %; con el segundo, el 41 %; con el tercero, el 57 %. El punto negro marca cuántos eventos hacen falta para llegar al 50 % (línea punteada): 3 en la franja y 4 en el Pacífico. La línea azul discontinua marca el 10 % mayor: más allá, los eventos restantes suman poco cada uno. Es una decisión de método, no una consecuencia de la curva: la cohorte delimita el objeto de estudio, los eventos grandes que concentran la actividad. La normalización L2 quita la amplitud de cada mapa, pero la extensión sí cambia su forma; con unos 1 200 eventos pequeños en el mismo análisis, la clasificación se ocuparía sobre todo de ellos. El 10 % se toma por área máxima global, no por celdas-día, de modo que el corte en la curva es aproximado.</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
           position:absolute!important;
@@ -764,7 +734,7 @@ Francois Colas
 <p>134 eventos mayores, 4 clases por la forma de su mapa de intensidad media Ī (suavizado 50 km, distancia coseno, enlace promedio, k = 4). Color: porcentaje de los eventos de la clase que pasan por cada celda.</p>
 </div>
 <aside class="notes">
-<p>Clases de 66, 52, 13 y 3 eventos. C1 cubre todo el dominio, con más frecuencia en la costa norte y Ecuador; C2 el subtrópico y la costa sur; C3 la costa central de Perú; C4 la costa sur de Perú (3 eventos, evidencia limitada, pero el grupo aparece igual con k = 4, 6 y 8). Corte k = 4 (elegido por el usuario): el más estable de k = 4, 6 y 8 (respaldo).</p>
+<p>Clases de 66, 52, 13 y 3 eventos. C1 cubre todo el dominio, con más frecuencia en la costa norte y Ecuador; C2 el subtrópico y la costa sur; C3 la costa central de Perú; C4 la costa sur de Perú (3 eventos, evidencia limitada, pero el grupo aparece igual con k = 4, 6 y 8). Corte k = 4 (elegido por el usuario): el de mayor ARI medio entre k = 4, 6 y 8, sin clases de un solo evento (respaldo).</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
           position:absolute!important;
@@ -861,8 +831,8 @@ Francois Colas
           display:block!important;
       }</style></aside>
 </section>
-<section id="episodios-conocidos-con-las-clases-de-duración-d" class="slide level2">
-<h2>Episodios conocidos con las clases de duración D</h2>
+<section id="episodios-conocidos-con-las-clases-de-días-activos-d" class="slide level2">
+<h2>Episodios conocidos con las clases de días activos D</h2>
 <!-- [R8] → conclusión 5 -->
 <img data-src="assets/results_deck/episodes_by_class_B.png" class="r-stretch" alt="Eventos por clase del corte por días activos, con los eventos principales de los episodios conocidos: 9 en C1 y El Niño 1991-92 en C2">
 <div class="caption">
@@ -893,18 +863,19 @@ Francois Colas
 <div class="column" style="width:55%;">
 <p><strong>Conclusiones</strong></p>
 <ol type="1">
-<li>Una ola de calor conectada no es un episodio: un evento puede abarcar varios El Niño o viceversa</li>
+<li>Una ola de calor marina no es un evento puntual sino un calentamiento en el espacio-tiempo</li>
 <li>El recuento depende de la conectividad; 18 y 26 casi coinciden</li>
-<li>La actividad costera mensual sigue al ICEN: r = 0,84 a desfase cero</li>
-<li>Los eventos mayores (top 10 %) se agrupan sobre todo por dónde ocurren, con mapas de intensidad o de días activos</li>
-<li>Los episodios de El Niño conocidos caen casi todos en una misma clase: 10 de 10 (intensidad), 9 de 10 (días activos)</li>
+<li>Una ola de calor marina se puede caracterizar mediante métricas escalares y tensoriales</li>
+<li>Los eventos grandes (top 10 %) se agrupan sobre todo por dónde ocurren, con mapas de intensidad o de días activos</li>
+<li>Una ola de calor marina no es un episodio El Niño: puede abarcar varios El Niño o viceversa.</li>
+<li>Los episodios El Niño caen casi todos en una misma clase: 10 de 10 (intensidad), 9 de 10 (días activos)</li>
 </ol>
 </div><div class="column" style="width:45%;">
 <p><strong>Perspectivas</strong></p>
 <ul>
 <li>Caracterizar cada evento con campos atmosféricos y oceánicos (ERA5, GLORYS)</li>
 <li>Estudiar los mecanismos físicos por clase</li>
-<li>Clases con el detector variable y cortes definitivos</li>
+<li>Clases con el detector variable (Bonino et al., 2023) y cortes definitivos</li>
 </ul>
 </div></div>
 <aside class="notes">
@@ -930,6 +901,63 @@ Francois Colas
 <h1>Respaldo</h1>
 
 </section>
+<section id="dendrograma-clases-por-intensidad-media-ī" class="slide level2">
+<h2>Dendrograma: clases por intensidad media Ī</h2>
+<img data-src="assets/results_deck/dendrogram_A.png" class="r-stretch" alt="Dendrograma del corte por intensidad media, k = 4">
+</section>
+<section id="dendrograma-clases-por-días-activos-d" class="slide level2">
+<h2>Dendrograma: clases por días activos D</h2>
+<img data-src="assets/results_deck/dendrogram_B.png" class="r-stretch" alt="Dendrograma del corte por días activos, k = 4">
+</section>
+<section id="el-niño-1991-1992-en-la-franja-costera" class="slide level2">
+<h2>El Niño 1991-1992 en la franja costera</h2>
+<div class="columns">
+<div class="column" style="width:68%;">
+<p><img data-src="assets/results_deck/episode_en1991_92.png" alt="Índices ONI e ICEN, porcentaje del Pacífico y de la franja bajo ola de calor, y mapas de días dentro de un evento e intensidad media, El Niño 1991-92"></p>
+</div><div class="column" style="width:32%;">
+<ul>
+<li>El ICEN llega a +2,0 °C en abril de 1992</li>
+<li>Respuesta tardía en la franja: marzo-mayo de 1992 (pico del 70 % el 1 de abril); en la ventana, solo el 11 % de media</li>
+<li>Evento principal: 148 días (febrero-julio 1992)</li>
+</ul>
+</div></div>
+<div class="caption">
+<p>Ventana del episodio: junio 1991 - junio 1992 (sombreado). Mismas medidas que El Niño 2023-24.</p>
+</div>
+<aside class="notes">
+<p>Episodio moderado y de respuesta costera tardía. Sus mapas son de la ventana y de cualquier evento; la diapositiva siguiente muestra los mapas del evento principal, que son los que entran al clustering.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section id="el-niño-1991-1992-su-clase-depende-del-mapa" class="slide level2">
+<h2>El Niño 1991-1992: su clase depende del mapa</h2>
+<img data-src="assets/results_deck/event_6016_classes.png" class="r-stretch" alt="Mapas A y B suavizados del evento principal de El Niño 1991-92 y su distancia media a cada clase">
+<div class="caption">
+<p>Con mapas de intensidad (A) pesa la lengua ecuatorial y la costa norte, y queda más cerca de C1; con días activos (B) pesa la costa central de Perú y la banda subtropical, y queda más cerca de C2. Las distancias a las clases son parecidas: es un evento de frontera (silhouette 0,06 con A y 0,04 con B).</p>
+</div>
+<aside class="notes">
+<p>A y B miden cosas distintas del mismo evento: dónde fue intenso y dónde duró. Un evento cuyo calentamiento intenso fue ecuatorial y breve, y cuya permanencia fue costera y subtropical, puede caer en clases distintas. La barra es la distancia media a los miembros de cada clase, que es lo que compara el enlace promedio; el árbol une grupos, no asigna eventos uno a uno, así que es una lectura, no la regla exacta de asignación.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
 <section id="un-evento-conectado-puede-abarcar-varios-episodios" class="slide level2">
 <h2>Un evento conectado puede abarcar varios episodios</h2>
 <!-- [R5] → conclusión 1 -->
@@ -951,14 +979,15 @@ Francois Colas
           display:block!important;
       }</style></aside>
 </section>
-<section id="cómo-elegimos-el-corte" class="slide level2">
-<h2>Cómo elegimos el corte</h2>
-<img data-src="assets/results_deck/cut_choice.png" class="r-stretch" alt="Silhouette, estabilidad ARI y tamaño de la clase más pequeña para k = 4, 6 y 8, con mapas de intensidad y de días activos">
+<section id="la-actividad-costera-sigue-al-icen" class="slide level2">
+<h2>La actividad costera sigue al ICEN</h2>
+<!-- [R4] → conclusión 3 -->
+<img data-src="assets/results_deck/activity_vs_oni_icen.png" class="r-stretch" alt="Porcentaje mensual del Pacífico y de la franja bajo ola de calor frente a ONI e ICEN, con la correlación según el desfase">
 <div class="caption">
-<p>k = 4 es el corte más estable en las dos representaciones; k = 8 tiene mejor silhouette pero deja una clase de un solo evento.</p>
+<p>1982-2024: a desfase cero, el porcentaje mensual de la franja bajo ola de calor correlaciona r = 0,84 con el ICEN; el del Pacífico, r = 0,52 con el ONI.</p>
 </div>
 <aside class="notes">
-<p>Estabilidad: 200 submuestras del 80 % de los eventos, se recorta el árbol de cada una y se compara con el corte completo (ARI medio y percentil 10). Ī: ARI 0,93 / 0,87 / 0,76 para k = 4 / 8 / 6. D: 0,80 / 0,79 / 0,77.</p>
+<p>El ICEN mide El Niño costero (Niño 1+2); el ONI, el del Pacífico central. La franja responde al costero. Banda: intervalo del 95 % por remuestreo de bloques de 12 meses. Es coherencia con un índice de TSM, no una prueba causal. La actividad costera mensual sigue al ICEN: r = 0,84 a desfase cero</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
           position:absolute!important;
@@ -970,14 +999,6 @@ Francois Colas
           overflow: hidden!important;
           display:block!important;
       }</style></aside>
-</section>
-<section id="dendrograma-clases-por-intensidad-media-ī" class="slide level2">
-<h2>Dendrograma: clases por intensidad media Ī</h2>
-<img data-src="assets/results_deck/dendrogram_A.png" class="r-stretch" alt="Dendrograma del corte por intensidad media, k = 4">
-</section>
-<section id="dendrograma-clases-por-días-activos-d" class="slide level2">
-<h2>Dendrograma: clases por días activos D</h2>
-<img data-src="assets/results_deck/dendrogram_B.png" class="r-stretch" alt="Dendrograma del corte por días activos, k = 4">
 
 </section></section>
     </div>
