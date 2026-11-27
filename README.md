@@ -22,6 +22,15 @@ Material del taller sobre **Olas de Calor Marinas (OCM)** en la costa peruana: c
 
 ---
 
+## 🎤 Seminario científico
+
+- Presentación del proyecto ReMoHES: objetivos y líneas de investigación - Adolfo Chamorro (pendiente)
+- [Olas de calor marinas: características, mecanismos y detección - Alice Pietri](docs/remohes-pucp-2026-ap.pdf)
+- Modelamiento oceánico regional, El Niño y olas de calor marinas - Francois Colas (pendiente)
+- [Aprendizaje no supervisado para la clasificación de olas de calor marinas - Daniel Camarena](https://danielcamarena.github.io/remohes-pucp-2026/remohes2026_deck/) (presentación web; fuente en [`docs/remohes2026_deck/`](docs/remohes2026_deck/))
+
+---
+
 ## 🚀 Cómo usarlo
 
 ### Google Colab
@@ -60,7 +69,7 @@ remohes-pucp-2026/
 └── docs/
     ├── remohes-pucp-2026-ap.pdf          # Diapositivas del seminario: A. Pietri (las demás, pendientes)
     ├── remohes2026_deck/                 # Presentación web de D. Camarena (GitHub Pages)
-    └── referencias.md                    # Artículos citados, con DOI, y charlas del seminario
+    └── referencias.md                    # Artículos citados, con DOI
 ```
 
 ---
@@ -110,4 +119,4 @@ Desde Python: `descargar("2026-01-01", "2026-11-20", lat=(-18, -3), lon=(-85, -7
 
 ## 📚 Referencias
 
-Ver [docs/referencias.md](docs/referencias.md): Hobday et al. (2016, 2018), Hyndman y Fan (1996), Huang et al. (2021), Stefanon et al. (2012) y Bonino et al. (2023), además de las charlas del seminario científico.
+Ver [docs/referencias.md](docs/referencias.md): Hobday et al. (2016, 2018), Hyndman y Fan (1996), Huang et al. (2021), Stefanon et al. (2012) y Bonino et al. (2023).
